@@ -14,6 +14,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [isLoading, setIsLoading] = React.useState(true)
   const [isAuthenticated, setIsAuthenticated] = React.useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
 
   React.useEffect(() => {
     const checkAuth = async () => {
@@ -21,44 +22,37 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         const user = await getAuthUser()
         setIsAuthenticated(!!user)
         if (!user) {
-          // Redirect to login
-          navigate({ to: '/' })
+          // Redirect to login with redirectTo parameter
+          const currentPath = location.pathname + location.search
+          const redirectTo = encodeURIComponent(currentPath)
+          // Use window.location for external navigation to bypass type checking
+          window.location.href = `/login?redirectTo=${redirectTo}`
         }
       } catch (error) {
         console.error('Auth check failed:', error)
         setIsAuthenticated(false)
-        navigate({ to: '/' })
+        const currentPath = location.pathname + location.search
+        const redirectTo = encodeURIComponent(currentPath)
+        window.location.href = `/login?redirectTo=${redirectTo}`
       } finally {
         setIsLoading(false)
       }
     }
 
     checkAuth()
-  }, [navigate])
+  }, [location])
 
   if (isLoading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center',
-        height: '100vh',
-        fontFamily: 'system-ui'
-      }}>
-        <div>Loading...</div>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'system-ui' }}>
+        <div>Memuat...</div>
       </div>
     )
   }
 
   if (!isAuthenticated) {
     return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        fontFamily: 'system-ui'
-      }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'system-ui' }}>
         <div>Mengarahkan ke halaman masuk...</div>
       </div>
     )

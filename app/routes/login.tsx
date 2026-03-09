@@ -23,9 +23,17 @@ function LoginComponent() {
   const [password, setPassword] = React.useState('')
   const [error, setError] = React.useState('')
   const [isLoading, setIsLoading] = React.useState(false)
-
   const navigate = useNavigate()
   const { user } = Route.useRouteContext() as { user: UserData | null }
+
+  // Get redirectTo from query params using URL API
+  const redirectTo = React.useMemo(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      return params.get('redirectTo')
+    }
+    return null
+  }, [])
 
   // Redirect if already authenticated
   React.useEffect(() => {
@@ -48,10 +56,14 @@ function LoginComponent() {
 
     try {
       const result = await login({ data: { email, password } })
-
       if (result.success && result.user) {
         // Navigate to intended page or dashboard
-        navigate({ to: '/' })
+        if (redirectTo) {
+          const decodedRedirect = decodeURIComponent(redirectTo)
+          window.location.href = decodedRedirect
+        } else {
+          navigate({ to: '/' })
+        }
       } else {
         setError(result.error || 'Terjadi kesalahan saat masuk')
       }
@@ -93,7 +105,6 @@ function LoginComponent() {
         >
           Masuk
         </h1>
-
         <p
           style={{
             textAlign: 'center',
@@ -103,7 +114,6 @@ function LoginComponent() {
         >
           Sistem Manajemen Interview & Assessment
         </p>
-
         {error && (
           <div
             style={{
@@ -118,7 +128,6 @@ function LoginComponent() {
             {error}
           </div>
         )}
-
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '1rem' }}>
             <label
@@ -149,7 +158,6 @@ function LoginComponent() {
               placeholder="Masukkan email Anda"
             />
           </div>
-
           <div style={{ marginBottom: '1.5rem' }}>
             <label
               htmlFor="password"
@@ -179,7 +187,6 @@ function LoginComponent() {
               placeholder="Masukkan kata sandi"
             />
           </div>
-
           <button
             type="submit"
             disabled={isLoading}
