@@ -1,0 +1,557 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model assessment_attempts {
+  id                                                    String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id                                            String?                @db.Uuid
+  bank_id                                               String                 @db.Uuid
+  participant_id                                        String                 @db.Uuid
+  submission_code                                       String?
+  started_at                                            DateTime?              @db.Timestamptz(6)
+  submitted_at                                          DateTime?              @db.Timestamptz(6)
+  objective_score                                       Decimal                @default(0) @db.Decimal(8, 2)
+  essay_score                                           Decimal                @default(0) @db.Decimal(8, 2)
+  total_score                                           Decimal                @default(0) @db.Decimal(8, 2)
+  competency_result                                     talent_result?
+  reviewer_id                                           String?                @db.Uuid
+  review_note                                           String?
+  question_banks                                        question_banks         @relation(fields: [bank_id], references: [id], onUpdate: NoAction)
+  partners_assessment_attempts_participant_idTopartners partners               @relation("assessment_attempts_participant_idTopartners", fields: [participant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  projects                                              projects?              @relation(fields: [project_id], references: [id], onUpdate: NoAction)
+  partners_assessment_attempts_reviewer_idTopartners    partners?              @relation("assessment_attempts_reviewer_idTopartners", fields: [reviewer_id], references: [id], onUpdate: NoAction)
+  assessment_responses                                  assessment_responses[]
+
+  @@index([participant_id], map: "idx_assessment_attempts_participant_id")
+}
+
+model assessment_responses {
+  id                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  attempt_id          String              @db.Uuid
+  question_id         String?             @db.Uuid
+  selected_option_id  String?             @db.Uuid
+  answer_text         String?
+  awarded_score       Decimal             @default(0) @db.Decimal(8, 2)
+  reviewer_note       String?
+  assessment_attempts assessment_attempts @relation(fields: [attempt_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  questions           questions?          @relation(fields: [question_id], references: [id], onUpdate: NoAction)
+  question_options    question_options?   @relation(fields: [selected_option_id], references: [id], onUpdate: NoAction)
+}
+
+model capa_actions {
+  id                 String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  finding_id         String        @db.Uuid
+  action_type        action_type
+  owner_partner_id   String?       @db.Uuid
+  owner_name         String?
+  action_description String
+  target_date        DateTime?     @db.Date
+  completed_at       DateTime?     @db.Timestamptz(6)
+  effectiveness_note String?
+  status             action_status @default(open)
+  findings           findings      @relation(fields: [finding_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  partners           partners?     @relation(fields: [owner_partner_id], references: [id], onUpdate: NoAction)
+
+  @@index([status], map: "idx_capa_actions_status")
+}
+
+model evidence_files {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  owner_type       evidence_owner
+  owner_id         String         @db.Uuid
+  file_name        String
+  file_url         String
+  mime_type        String?
+  external_file_id String?
+  uploaded_at      DateTime       @default(now()) @db.Timestamptz(6)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model finding_updates {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  finding_id       String    @db.Uuid
+  updated_by       String?   @db.Uuid
+  update_time      DateTime  @default(now()) @db.Timestamptz(6)
+  progress_percent Decimal?  @db.Decimal(5, 2)
+  update_note      String
+  findings         findings  @relation(fields: [finding_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  partners         partners? @relation(fields: [updated_by], references: [id], onUpdate: NoAction)
+}
+
+model findings {
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  visit_report_id    String            @db.Uuid
+  standard_code      standard_code
+  category           finding_category
+  risk_level         risk_level        @default(medium)
+  title              String
+  description        String
+  root_cause         String?
+  recommended_action String?
+  due_date           DateTime?         @db.Date
+  is_repeated        Boolean           @default(false)
+  is_closed          Boolean           @default(false)
+  created_at         DateTime          @default(now()) @db.Timestamptz(6)
+  capa_actions       capa_actions[]
+  finding_updates    finding_updates[]
+  visit_reports      visit_reports     @relation(fields: [visit_report_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([standard_code, category], map: "idx_findings_standard_category")
+  @@index([visit_report_id], map: "idx_findings_visit_report_id")
+}
+
+model interview_responses {
+  id                   String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  interview_session_id String             @db.Uuid
+  question_id          String?            @db.Uuid
+  response_text        String?
+  selected_option_id   String?            @db.Uuid
+  awarded_score        Decimal?           @db.Decimal(8, 2)
+  reviewer_note        String?
+  interview_sessions   interview_sessions @relation(fields: [interview_session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  questions            questions?         @relation(fields: [question_id], references: [id], onUpdate: NoAction)
+  question_options     question_options?  @relation(fields: [selected_option_id], references: [id], onUpdate: NoAction)
+}
+
+model interview_score_entries {
+  id                   String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  interview_session_id String             @db.Uuid
+  criterion_id         String             @db.Uuid
+  score                Decimal            @db.Decimal(8, 2)
+  comment              String?
+  scoring_criteria     scoring_criteria   @relation(fields: [criterion_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  interview_sessions   interview_sessions @relation(fields: [interview_session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([interview_session_id, criterion_id])
+}
+
+model interview_sessions {
+  id                                                   String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id                                           String?                   @db.Uuid
+  bank_id                                              String?                   @db.Uuid
+  candidate_id                                         String                    @db.Uuid
+  interviewer_id                                       String?                   @db.Uuid
+  site_id                                              String?                   @db.Uuid
+  interview_mode                                       interview_mode?
+  interview_kind                                       interview_kind?
+  interview_date                                       DateTime                  @db.Date
+  objective                                            String?
+  result                                               talent_result?
+  total_score                                          Decimal?                  @db.Decimal(8, 2)
+  notes                                                String?
+  submission_code                                      String?
+  created_at                                           DateTime                  @default(now()) @db.Timestamptz(6)
+  interview_responses                                  interview_responses[]
+  interview_score_entries                              interview_score_entries[]
+  question_banks                                       question_banks?           @relation(fields: [bank_id], references: [id], onUpdate: NoAction)
+  partners_interview_sessions_candidate_idTopartners   partners                  @relation("interview_sessions_candidate_idTopartners", fields: [candidate_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  partners_interview_sessions_interviewer_idTopartners partners?                 @relation("interview_sessions_interviewer_idTopartners", fields: [interviewer_id], references: [id], onUpdate: NoAction)
+  projects                                             projects?                 @relation(fields: [project_id], references: [id], onUpdate: NoAction)
+  sites                                                sites?                    @relation(fields: [site_id], references: [id], onUpdate: NoAction)
+
+  @@index([candidate_id], map: "idx_interview_sessions_candidate_id")
+}
+
+model organizations {
+  id                                             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                                           String
+  org_type                                       org_type
+  address                                        String?
+  contact_name                                   String?
+  contact_phone                                  String?
+  contact_email                                  String?
+  created_at                                     DateTime   @default(now()) @db.Timestamptz(6)
+  projects_projects_client_org_idToorganizations projects[] @relation("projects_client_org_idToorganizations")
+  projects_projects_owner_org_idToorganizations  projects[] @relation("projects_owner_org_idToorganizations")
+}
+
+model partners {
+  id                                                               String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  full_name                                                        String
+  email                                                            String?
+  phone                                                            String?
+  domicile_city                                                    String?
+  domicile_province                                                String?
+  partner_type                                                     partner_type
+  experience_level                                                 String?
+  is_active                                                        Boolean                 @default(true)
+  notes                                                            String?
+  created_at                                                       DateTime                @default(now()) @db.Timestamptz(6)
+  assessment_attempts_assessment_attempts_participant_idTopartners assessment_attempts[]   @relation("assessment_attempts_participant_idTopartners")
+  assessment_attempts_assessment_attempts_reviewer_idTopartners    assessment_attempts[]   @relation("assessment_attempts_reviewer_idTopartners")
+  capa_actions                                                     capa_actions[]
+  finding_updates                                                  finding_updates[]
+  interview_sessions_interview_sessions_candidate_idTopartners     interview_sessions[]    @relation("interview_sessions_candidate_idTopartners")
+  interview_sessions_interview_sessions_interviewer_idTopartners   interview_sessions[]    @relation("interview_sessions_interviewer_idTopartners")
+  partnership_contracts                                            partnership_contracts[]
+  site_assignments                                                 site_assignments[]
+  visit_reports                                                    visit_reports[]
+}
+
+model partnership_contracts {
+  id                  String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id          String             @db.Uuid
+  partner_id          String             @db.Uuid
+  contract_number     String?            @unique
+  role_title          String
+  payment_scheme      String             @default("visit_based")
+  visit_fee_amount    Decimal?           @db.Decimal(12, 2)
+  start_date          DateTime           @db.Date
+  end_date            DateTime?          @db.Date
+  reporting_sla_hours Int                @default(24)
+  max_sites_per_batch Int?
+  scope_of_work       String?
+  signed_at           DateTime?          @db.Timestamptz(6)
+  created_at          DateTime           @default(now()) @db.Timestamptz(6)
+  partners            partners           @relation(fields: [partner_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  projects            projects           @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  site_assignments    site_assignments[]
+}
+
+model project_batches {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id        String             @db.Uuid
+  batch_code        String
+  batch_name        String
+  status            batch_status       @default(draft)
+  target_site_count Int?
+  started_on        DateTime?          @db.Date
+  due_on            DateTime?          @db.Date
+  notes             String?
+  created_at        DateTime           @default(now()) @db.Timestamptz(6)
+  projects          projects           @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  site_assignments  site_assignments[]
+  sites             sites[]
+  visit_reports     visit_reports[]
+
+  @@unique([project_id, batch_code])
+}
+
+model project_standards {
+  project_id    String        @db.Uuid
+  standard_code standard_code
+  projects      projects      @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([project_id, standard_code])
+}
+
+model projects {
+  id                                                  String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code                                                String                  @unique
+  title                                               String
+  description                                         String?
+  client_org_id                                       String?                 @db.Uuid
+  owner_org_id                                        String?                 @db.Uuid
+  status                                              project_status          @default(draft)
+  visit_fee_min                                       Decimal?                @db.Decimal(12, 2)
+  visit_fee_max                                       Decimal?                @db.Decimal(12, 2)
+  report_due_hours                                    Int                     @default(24)
+  started_at                                          DateTime?               @db.Date
+  ended_at                                            DateTime?               @db.Date
+  created_at                                          DateTime                @default(now()) @db.Timestamptz(6)
+  assessment_attempts                                 assessment_attempts[]
+  interview_sessions                                  interview_sessions[]
+  partnership_contracts                               partnership_contracts[]
+  project_batches                                     project_batches[]
+  project_standards                                   project_standards[]
+  organizations_projects_client_org_idToorganizations organizations?          @relation("projects_client_org_idToorganizations", fields: [client_org_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizations_projects_owner_org_idToorganizations  organizations?          @relation("projects_owner_org_idToorganizations", fields: [owner_org_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  question_banks                                      question_banks[]
+  site_assignments                                    site_assignments[]
+  sites                                               sites[]
+  visit_reports                                       visit_reports[]
+}
+
+model question_banks {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  purpose             form_purpose
+  project_id          String?               @db.Uuid
+  title               String
+  description         String?
+  template_code       String?
+  version_no          Int                   @default(1)
+  is_active           Boolean               @default(true)
+  created_at          DateTime              @default(now()) @db.Timestamptz(6)
+  assessment_attempts assessment_attempts[]
+  interview_sessions  interview_sessions[]
+  projects            projects?             @relation(fields: [project_id], references: [id], onUpdate: NoAction)
+  questions           questions[]
+  visit_reports       visit_reports[]
+
+  @@unique([purpose, template_code, version_no])
+}
+
+model question_options {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  question_id          String                 @db.Uuid
+  option_label         String
+  option_value         String
+  score_value          Decimal                @default(0) @db.Decimal(8, 2)
+  is_correct           Boolean                @default(false)
+  sort_order           Int                    @default(1)
+  assessment_responses assessment_responses[]
+  interview_responses  interview_responses[]
+  questions            questions              @relation(fields: [question_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model questions {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bank_id              String                 @db.Uuid
+  section_code         String?
+  section_title        String?
+  field_key            String?
+  question_type        question_type
+  prompt               String
+  help_text            String?
+  standard_code        standard_code?
+  is_required          Boolean                @default(true)
+  weight               Decimal                @default(1) @db.Decimal(8, 2)
+  sort_order           Int                    @default(1)
+  assessment_responses assessment_responses[]
+  interview_responses  interview_responses[]
+  question_options     question_options[]
+  question_banks       question_banks         @relation(fields: [bank_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model scoring_criteria {
+  id                      String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  context                 assessment_context
+  code                    String
+  name                    String
+  max_score               Decimal                   @db.Decimal(8, 2)
+  weight                  Decimal                   @default(1) @db.Decimal(8, 2)
+  description             String?
+  interview_score_entries interview_score_entries[]
+
+  @@unique([context, code])
+}
+
+model site_assignments {
+  id                    String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id            String                 @db.Uuid
+  batch_id              String?                @db.Uuid
+  site_id               String                 @db.Uuid
+  partner_id            String                 @db.Uuid
+  contract_id           String?                @db.Uuid
+  assigned_fee          Decimal                @db.Decimal(12, 2)
+  target_visit_date     DateTime?              @db.Date
+  report_due_at         DateTime?              @db.Timestamptz(6)
+  status                assignment_status      @default(assigned)
+  assigned_at           DateTime               @default(now()) @db.Timestamptz(6)
+  project_batches       project_batches?       @relation(fields: [batch_id], references: [id], onUpdate: NoAction)
+  partnership_contracts partnership_contracts? @relation(fields: [contract_id], references: [id], onUpdate: NoAction)
+  partners              partners               @relation(fields: [partner_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  projects              projects               @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sites                 sites                  @relation(fields: [site_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  visit_reports         visit_reports[]
+
+  @@unique([site_id, partner_id, batch_id])
+  @@index([partner_id], map: "idx_site_assignments_partner_id")
+  @@index([status], map: "idx_site_assignments_status")
+}
+
+model sites {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id         String               @db.Uuid
+  batch_id           String?              @db.Uuid
+  code               String
+  name               String
+  site_type          String?              @default("sppg")
+  province           String?
+  city               String?
+  district           String?
+  address            String?
+  pic_name           String?
+  pic_phone          String?
+  worker_count       Int?
+  daily_capacity     Int?
+  site_status        site_status?
+  created_at         DateTime             @default(now()) @db.Timestamptz(6)
+  interview_sessions interview_sessions[]
+  site_assignments   site_assignments[]
+  project_batches    project_batches?     @relation(fields: [batch_id], references: [id], onUpdate: NoAction)
+  projects           projects             @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  visit_reports      visit_reports[]
+
+  @@unique([project_id, code])
+  @@index([project_id], map: "idx_sites_project_id")
+}
+
+model visit_check_results {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  visit_report_id String        @db.Uuid
+  standard_code   standard_code
+  item_code       String
+  item_label      String
+  item_status     Boolean?
+  note            String?
+  visit_reports   visit_reports @relation(fields: [visit_report_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model visit_reports {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id          String                @db.Uuid
+  batch_id            String?               @db.Uuid
+  assignment_id       String?               @db.Uuid
+  site_id             String                @db.Uuid
+  submitted_by        String                @db.Uuid
+  template_bank_id    String?               @db.Uuid
+  submission_code     String?
+  visit_date          DateTime              @db.Date
+  site_status         site_status?
+  worker_count        Int?
+  daily_capacity      Int?
+  summary             String?
+  report_submitted_at DateTime              @default(now()) @db.Timestamptz(6)
+  pic_signature_name  String?
+  findings            findings[]
+  visit_check_results visit_check_results[]
+  site_assignments    site_assignments?     @relation(fields: [assignment_id], references: [id], onUpdate: NoAction)
+  project_batches     project_batches?      @relation(fields: [batch_id], references: [id], onUpdate: NoAction)
+  projects            projects              @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sites               sites                 @relation(fields: [site_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  partners            partners              @relation(fields: [submitted_by], references: [id], onUpdate: NoAction)
+  question_banks      question_banks?       @relation(fields: [template_bank_id], references: [id], onUpdate: NoAction)
+
+  @@unique([site_id, submitted_by, visit_date])
+  @@index([site_id], map: "idx_visit_reports_site_id")
+  @@index([visit_date], map: "idx_visit_reports_visit_date")
+}
+
+enum action_status {
+  open
+  in_progress
+  waiting_verification
+  closed
+  rejected
+}
+
+enum action_type {
+  containment
+  corrective
+  preventive
+}
+
+enum assessment_context {
+  interview
+  self_assessment
+  inspection
+}
+
+enum assignment_status {
+  assigned
+  visited
+  reported
+  closed
+  overdue
+}
+
+enum batch_status {
+  draft
+  active
+  completed
+  cancelled
+}
+
+enum evidence_owner {
+  visit_report
+  finding
+  capa_action
+  assessment_attempt
+  interview_session
+  contract
+}
+
+enum finding_category {
+  major
+  minor
+  observation
+}
+
+enum form_purpose {
+  interview
+  self_assessment
+  visit_report
+  capa
+  closing_site
+}
+
+enum interview_kind {
+  walking
+  full
+}
+
+enum interview_mode {
+  onsite
+  online
+  hybrid
+}
+
+enum org_type {
+  internal
+  client
+  regulator
+  vendor
+}
+
+enum partner_type {
+  candidate
+  mitra
+  penyelia_halal
+  tenaga_ahli
+  halal_auditor
+  interviewer
+}
+
+enum project_status {
+  draft
+  active
+  on_hold
+  closed
+}
+
+enum question_type {
+  short_text
+  long_text
+  single_choice
+  multiple_choice
+  rating
+  date
+  boolean
+}
+
+enum risk_level {
+  low
+  medium
+  high
+  critical
+}
+
+enum site_status {
+  very_ready
+  minor_fix
+  major_fix
+  not_ready
+}
+
+enum standard_code {
+  halal
+  slhs
+  haccp
+}
+
+enum talent_result {
+  priority_deploy
+  talent_pool
+  training_first
+  hold
+  senior_halal_compliance
+  deployable_penyelia_halal
+  training_required
+  not_ready
+}
