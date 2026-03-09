@@ -113,6 +113,27 @@ function InterviewsComponent() {
     gap: '1rem',
   }
 
+  const conductButtonStyle: React.CSSProperties = {
+    padding: '0.375rem 0.75rem',
+    backgroundColor: '#16a34a',
+    color: 'white',
+    border: '1px solid #16a34a',
+    borderRadius: '0.375rem',
+    fontSize: '0.75rem',
+    fontWeight: 500,
+    cursor: 'pointer',
+    minHeight: '36px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.25rem',
+  }
+
+  const actionCellStyle: React.CSSProperties = {
+    padding: '1rem',
+    borderBottom: '1px solid #e5e7eb',
+    textAlign: 'center',
+  }
+
   const createButtonStyle: React.CSSProperties = {
     padding: '0.625rem 1rem',
     backgroundColor: '#2563eb',
@@ -250,6 +271,7 @@ function InterviewsComponent() {
                   <th style={thStyle}>Tanggal</th>
                   <th style={thStyle}>Mode</th>
                   <th style={thStyle}>Hasil</th>
+                  <th style={{ ...thStyle, textAlign: 'center' }}>Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -259,6 +281,7 @@ function InterviewsComponent() {
                   const badgeTextColor = getResultTextColor(interview.result)
                   const resultLabel = interview.result ? INTERVIEW_RESULT_LABELS[interview.result as keyof typeof INTERVIEW_RESULT_LABELS] : 'Belum Dinilai'
                   const modeLabel = interview.interview_mode ? INTERVIEW_MODE_LABELS[interview.interview_mode as keyof typeof INTERVIEW_MODE_LABELS] : '-'
+                  const isCompleted = interview.result !== null && interview.result !== undefined
                   
                   return (
                     <tr key={interview.id} style={{ backgroundColor: 'white' }}>
@@ -280,6 +303,23 @@ function InterviewsComponent() {
                         <span style={badgeStyle(badgeBgColor, badgeTextColor)}>
                           {resultLabel}
                         </span>
+                      </td>
+                      <td style={actionCellStyle}>
+                        <a
+                          href={`/interviews/${interview.id}/conduct`}
+                          style={{
+                            ...conductButtonStyle,
+                            ...(isCompleted ? { backgroundColor: '#9ca3af', borderColor: '#9ca3af', cursor: 'not-allowed' } : {}),
+                          }}
+                          onClick={(e) => {
+                            if (isCompleted) {
+                              e.preventDefault()
+                              alert('Wawancara ini sudah diselesaikan')
+                            }
+                          }}
+                        >
+                          {isCompleted ? 'Selesai' : 'Lakukan'}
+                        </a>
                       </td>
                     </tr>
                   )

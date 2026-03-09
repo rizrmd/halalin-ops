@@ -387,3 +387,351 @@ export const createInterview = createServerFn({ method: 'POST' })
       throw error
     }
   })
+
+/**
+ * Question type enum values from schema.prisma
+ */
+export const QUESTION_TYPES = [
+  'short_text',
+  'long_text',
+  'single_choice',
+  'multiple_choice',
+  'rating',
+  'date',
+  'boolean',
+] as const
+
+export type QuestionType = typeof QUESTION_TYPES[number]
+
+export const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
+  short_text: 'Teks Pendek',
+  long_text: 'Teks Panjang',
+  single_choice: 'Pilihan Tunggal',
+  multiple_choice: 'Pilihan Ganda',
+  rating: 'Penilaian',
+  date: 'Tanggal',
+  boolean: 'Ya/Tidak',
+}
+
+/**
+ * Question with options for conduct form
+ */
+export interface QuestionWithOption {
+  id: string
+  bank_id: string
+  section_code: string | null
+  section_title: string | null
+  field_key: string | null
+  question_type: string
+  prompt: string
+  help_text: string | null
+  standard_code: string | null
+  is_required: boolean
+  weight: number | string
+  sort_order: number
+  question_options: Array<{
+    id: string
+    option_label: string
+    option_value: string
+    score_value: number | string
+    is_correct: boolean
+    sort_order: number
+  }>
+}
+
+/**
+ * Interview session details for conducting
+ */
+export interface InterviewConductSession {
+  id: string
+  bank_id: string | null
+  candidate_id: string
+  candidate_name: string
+  interviewer_id: string | null
+  interviewer_name: string | null
+  interview_date: string
+  interview_mode: string | null
+  objective: string | null
+  notes: string | null
+  result: string | null
+  total_score: number | null
+  submission_code: string | null
+  is_completed: boolean
+}
+
+/**
+ * Response for conduct interview data
+ */
+export interface ConductInterviewResponse {
+  session: InterviewConductSession
+  questions: QuestionWithOption[]
+}
+
+/**
+ * Input for saving a response
+ */
+export interface SaveResponseInput {
+  question_id: string
+  response_text?: string
+  selected_option_ids?: string[]
+  awarded_score?: number
+}
+
+/**
+ * Result for saving a response
+ */
+export interface SaveResponseResult {
+  success: boolean
+  error?: string
+}
+
+/**
+ * Input for completing interview
+ */
+export interface CompleteInterviewInput {
+  result?: InterviewResult
+  total_score?: number
+  notes?: string
+}
+
+/**
+ * Result for completing interview
+ */
+export interface CompleteInterviewResult {
+  success: boolean
+  error?: string
+}
+
+/**
+ * Get interview session and questions for conducting
+ */
+export const getConductInterview = createServerFn({ method: 'GET' })
+  .inputValidator((data: unknown): { interviewId: string } => {
+    if (typeof data !== 'object' || data === null) {
+      throw new Error('Invalid input')
+    }
+    const { interviewId } = data as Record<string, unknown>
+    if (typeof interviewId !== 'string' || !interviewId) {
+      throw new Error('Interview ID is required')
+    }
+    return { interviewId }
+  })
+  .handler(async ({ data }): Promise<ConductInterviewResponse> => {
+    const { interviewId } = data
+
+    // Get interview session with candidate and interviewer info
+    const session = await prisma.interview_sessions.findUnique({
+      where: { id: interviewId },
+      select: {
+        id: true,
+        bank_id: true,
+        candidate_id: true,
+        interviewer_id: true,
+        interview_date: true,
+        interview_mode: true,
+        objective: true,
+        notes: true,
+        result: true,
+        total_score: true,
+        submission_code: true,
+        partners_interview_sessions_candidate_idTopartners: {
+          select: {
+            full_name: true,
+          },
+        },
+        partners_interview_sessions_interviewer_idTopartners: {
+          select: {
+            full_name: true,
+          },
+        },
+      },
+    })
+
+    if (!session) {
+      throw new Error('Interview session not found')
+    }
+
+    // Check if interview is already completed
+    const is_completed = session.submission_code !== null && session.submission_code !== undefined
+
+    // Get questions from the linked question bank
+    let questions: QuestionWithOption[] = []
+    if (session.bank_id) {
+      questions = (await prisma.questions.findMany({
+        where: {
+          bank_id: session.bank_id,
+        },
+        include: {
+          question_options: {
+            orderBy: {
+              sort_order: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          sort_order: 'asc',
+        },
+      })).map(q => ({
+        ...q,
+        weight: Number(q.weight),
+        question_options: q.question_options.map(opt => ({
+          ...opt,
+          score_value: Number(opt.score_value),
+        })),
+      }))
+    }
+
+    return {
+      session: {
+        id: session.id,
+        bank_id: session.bank_id,
+        candidate_id: session.candidate_id,
+        candidate_name: session.partners_interview_sessions_candidate_idTopartners.full_name,
+        interviewer_id: session.interviewer_id,
+        interviewer_name: session.partners_interview_sessions_interviewer_idTopartners?.full_name || null,
+        interview_date: session.interview_date.toISOString().split('T')[0],
+        interview_mode: session.interview_mode,
+        objective: session.objective,
+        notes: session.notes,
+        result: session.result,
+        total_score: session.total_score ? Number(session.total_score) : null,
+        submission_code: session.submission_code,
+        is_completed,
+      },
+      questions,
+    }
+  })
+
+/**
+ * Save a response for a question
+ */
+export const saveInterviewResponse = createServerFn({ method: 'POST' })
+  .inputValidator((data: unknown): { interviewId: string; responses: SaveResponseInput[] } => {
+    if (typeof data !== 'object' || data === null) {
+      throw new Error('Invalid input')
+    }
+    const { interviewId, responses } = data as Record<string, unknown>
+    if (typeof interviewId !== 'string' || !interviewId) {
+      throw new Error('Interview ID is required')
+    }
+    if (!Array.isArray(responses)) {
+      throw new Error('Responses must be an array')
+    }
+    return { interviewId, responses: responses as SaveResponseInput[] }
+  })
+  .handler(async ({ data }): Promise<SaveResponseResult> => {
+    const { interviewId, responses } = data
+
+    try {
+      // Verify interview exists
+      const session = await prisma.interview_sessions.findUnique({
+        where: { id: interviewId },
+        select: { id: true, submission_code: true },
+      })
+
+      if (!session) {
+        return { success: false, error: 'Interview session not found' }
+      }
+
+      if (session.submission_code) {
+        return { success: false, error: 'Interview already completed' }
+      }
+
+      // Save or update responses
+      for (const response of responses) {
+        // For single_choice, use selected_option_ids[0]
+        const selected_option_id = response.selected_option_ids?.[0] || null
+
+        // Check if response exists
+        const existingResponse = await prisma.interview_responses.findFirst({
+          where: {
+            interview_session_id: interviewId,
+            question_id: response.question_id,
+          },
+        })
+
+        if (existingResponse) {
+          // Update existing response
+          await prisma.interview_responses.update({
+            where: {
+              id: existingResponse.id,
+            },
+            data: {
+              response_text: response.response_text || null,
+              selected_option_id,
+              awarded_score: response.awarded_score || null,
+            },
+          })
+        } else {
+          // Create new response
+          await prisma.interview_responses.create({
+            data: {
+              interview_session_id: interviewId,
+              question_id: response.question_id,
+              response_text: response.response_text || null,
+              selected_option_id,
+              awarded_score: response.awarded_score || null,
+            },
+          })
+        }
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('Error saving interview responses:', error)
+      return { success: false, error: 'Failed to save responses' }
+    }
+  })
+
+/**
+ * Complete/finalize an interview session
+ */
+export const completeInterview = createServerFn({ method: 'POST' })
+  .inputValidator((data: unknown): { interviewId: string; completionData: CompleteInterviewInput } => {
+    if (typeof data !== 'object' || data === null) {
+      throw new Error('Invalid input')
+    }
+    const { interviewId, completionData } = data as Record<string, unknown>
+    if (typeof interviewId !== 'string' || !interviewId) {
+      throw new Error('Interview ID is required')
+    }
+    return { interviewId, completionData: completionData as CompleteInterviewInput }
+  })
+  .handler(async ({ data }): Promise<CompleteInterviewResult> => {
+    const { interviewId, completionData } = data
+
+    try {
+      // Verify interview exists
+      const session = await prisma.interview_sessions.findUnique({
+        where: { id: interviewId },
+        select: { id: true, submission_code: true },
+      })
+
+      if (!session) {
+        return { success: false, error: 'Interview session not found' }
+      }
+
+      if (session.submission_code) {
+        return { success: false, error: 'Interview already completed' }
+      }
+
+      // Generate a unique submission code
+      const submission_code = `INT-${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`
+
+      // Update the interview session
+      await prisma.interview_sessions.update({
+        where: { id: interviewId },
+        data: {
+          result: completionData.result || null,
+          total_score: completionData.total_score || null,
+          notes: completionData.notes,
+          submission_code,
+        },
+      })
+
+      return { success: true }
+    } catch (error) {
+      console.error('Error completing interview:', error)
+      return { success: false, error: 'Failed to complete interview' }
+    }
+  })
