@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db'
+import { randomBytes } from 'crypto'
 
 // Type for assessment list item
 export interface AssessmentListItem {
@@ -15,6 +16,41 @@ export interface AssessmentListItem {
   started_at: string | null
   submitted_at: string | null
   status: 'not_started' | 'in_progress' | 'submitted' | 'reviewed'
+}
+
+// Type for participant option in dropdown
+export interface ParticipantOption {
+  id: string
+  full_name: string
+  email: string | null
+  partner_type: string
+}
+
+// Type for question bank option in dropdown
+export interface QuestionBankOption {
+  id: string
+  title: string
+  description: string | null
+  template_code: string | null
+}
+
+// Type for form options response
+export interface AssessmentFormOptionsResponse {
+  participants: ParticipantOption[]
+  questionBanks: QuestionBankOption[]
+}
+
+// Type for validation error
+export interface ValidationError {
+  field: string
+  message: string
+}
+
+// Type for create assessment result
+export interface CreateAssessmentResult {
+  success: boolean
+  assessmentId?: string
+  errors?: ValidationError[]
 }
 
 // Type for assessments response with pagination
@@ -129,4 +165,117 @@ export const getAssessments = createServerFn({ method: 'GET' })
     const totalPages = Math.ceil(totalCount / pageSize)
     
     return { assessments, totalCount, totalPages, currentPage: page, pageSize }
+  })
+
+/**
+ * Get form options for creating new assessment
+ * Returns participants (mitra, candidate, penyelia_halal) and self_assessment question banks
+ */
+export const getAssessmentFormOptions = createServerFn({ method: 'GET' })
+  .handler(async (): Promise<AssessmentFormOptionsResponse> => {
+    // Get eligible participants (mitra, candidate, penyelia_halal)
+    const participants = await prisma.partners.findMany({
+      where: {
+        partner_type: {
+          in: ['mitra', 'candidate', 'penyelia_halal'],
+        },
+        is_active: true,
+      },
+      select: {
+        id: true,
+        full_name: true,
+        email: true,
+        partner_type: true,
+      },
+      orderBy: {
+        full_name: 'asc',
+      },
+    })
+
+    // Get self_assessment question banks
+    const questionBanks = await prisma.question_banks.findMany({
+      where: {
+        purpose: 'self_assessment',
+        is_active: true,
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        template_code: true,
+      },
+      orderBy: {
+        created_at: 'desc',
+      },
+    })
+
+    return {
+      participants: participants.map((p) => ({
+        id: p.id,
+        full_name: p.full_name,
+        email: p.email,
+        partner_type: p.partner_type,
+      })),
+      questionBanks: questionBanks.map((qb) => ({
+        id: qb.id,
+        title: qb.title,
+        description: qb.description,
+        template_code: qb.template_code,
+      })),
+    }
+  })
+
+/**
+ * Create a new assessment attempt
+ */
+export const createAssessment = createServerFn({ method: 'POST' })
+  .inputValidator((data: unknown): { participant_id: string; bank_id: string } => {
+    if (typeof data !== 'object' || data === null) {
+      throw new Error('Invalid input data')
+    }
+    const { participant_id, bank_id } = data as Record<string, unknown>
+    if (typeof participant_id !== 'string' || !participant_id) {
+      throw new Error('Participant ID is required')
+    }
+    if (typeof bank_id !== 'string' || !bank_id) {
+      throw new Error('Question bank ID is required')
+    }
+    return { participant_id, bank_id }
+  })
+  .handler(async ({ data }): Promise<CreateAssessmentResult> => {
+    try {
+      const { participant_id, bank_id } = data
+
+      // Generate a unique submission code
+      const submission_code = `ASSESS-${randomBytes(4).toString('hex').toUpperCase()}`
+
+      // Create the assessment attempt with started_at timestamp
+      const assessment = await prisma.assessment_attempts.create({
+        data: {
+          participant_id,
+          bank_id,
+          submission_code,
+          started_at: new Date(),
+          objective_score: 0,
+          essay_score: 0,
+          total_score: 0,
+        },
+      })
+
+      return {
+        success: true,
+        assessmentId: assessment.id,
+      }
+    } catch (error) {
+      console.error('Error creating assessment:', error)
+      return {
+        success: false,
+        errors: [
+          {
+            field: 'general',
+            message: 'Gagal membuat assessment. Silakan coba lagi.',
+          },
+        ],
+      }
+    }
   })
