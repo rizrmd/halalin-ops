@@ -110,3 +110,16 @@ export const isAuthenticated = createServerFn({ method: 'GET' })
     const user = await getAuthUser()
     return !!user
   })
+
+/**
+ * Require authentication for protected routes.
+ * Returns user data if authenticated, or throws redirect to login.
+ * Note: This is a server-only function. Use beforeLoad in routes for client-side
+ */
+export async function requireAuth(): Promise<{ id: string; name: string; email: string | null; partnerType: string }> {
+  const user = await getAuthUser()
+  if (!user) {
+    throw new Error('UNAUTHORIZED')
+  }
+  return user
+}

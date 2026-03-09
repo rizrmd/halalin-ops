@@ -1,121 +1,161 @@
 import * as React from 'react'
-import { createFileRoute } from '@tanstack/react-router'
-import { RequireAuth } from '../components/RequireAuth'
-import { getAuthUser, logout } from '../server/auth'
+import { createFileRoute, Link } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/')({
   component: DashboardComponent,
-  beforeLoad: async () => {
-    const user = await getAuthUser()
-    return { user }
+  beforeLoad: async ({ context }) => {
+    // Check authentication - redirect to login if user is not authenticated
+    if (!context.user) {
+      throw new Error('UNAUTHORIZED')
+    }
+    return { user: context.user }
   },
 })
 
-interface UserData {
-  id: string
-  name: string
-  email: string | null
-  partnerType: string
-}
-
 function DashboardComponent() {
-  const { user } = Route.useRouteContext() as { user: UserData | null }
-  const navigate = Route.useNavigate()
+  const { user } = Route.useRouteContext() as { user: { id: string; name: string; email: string | null; partnerType: string } }
 
-  const handleLogout = async () => {
-    await logout()
-    navigate({ to: '/' })
+  const navigationCards = [
+    {
+      to: '/partners',
+      title: 'Mitra',
+      description: 'Kelola data mitra dan kandidat',
+      icon: '🤝',
+      color: '#3b82f6',
+    },
+    {
+      to: '/interviews',
+      title: 'Wawancara',
+      description: 'Kelola sesi wawancara',
+      icon: '🎤',
+      color: '#8b5cf6',
+    },
+    {
+      to: '/assessments',
+      title: 'Penilaian',
+      description: 'Kelola penilaian dan asesmen',
+      icon: '📝',
+      color: '#10b981',
+    },
+  ]
+
+  const containerStyle: React.CSSProperties = {
+    maxWidth: '1280px',
+    margin: '0 auto',
+    padding: '2rem 1rem',
+  }
+
+  const headerStyle: React.CSSProperties = {
+    marginBottom: '2rem',
+  }
+
+  const titleStyle: React.CSSProperties = {
+    fontSize: '1.875rem',
+    fontWeight: 'bold',
+    color: '#111827',
+    margin: '0 0 0.5rem 0',
+  }
+
+  const subtitleStyle: React.CSSProperties = {
+    color: '#6b7280',
+    margin: 0,
+  }
+
+  const welcomeStyle: React.CSSProperties = {
+    color: '#4b5563',
+    marginBottom: '2rem',
+  }
+
+  const gridStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+    gap: '1.5rem',
+  }
+
+  const cardStyle: React.CSSProperties = {
+    display: 'block',
+    padding: '1.5rem',
+    borderRadius: '0.5rem',
+    backgroundColor: 'white',
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+    textDecoration: 'none',
+    transition: 'all 0.2s ease',
+    border: '1px solid #e5e7eb',
+  }
+
+  const cardContentStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '1rem',
+  }
+
+  const iconContainerStyle = (color: string): React.CSSProperties => ({
+    width: '3rem',
+    height: '3rem',
+    borderRadius: '0.5rem',
+    backgroundColor: `${color}20`,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '1.5rem',
+    flexShrink: 0,
+  })
+
+  const cardTextStyle: React.CSSProperties = {
+    flex: 1,
+  }
+
+  const cardTitleStyle: React.CSSProperties = {
+    fontSize: '1.125rem',
+    fontWeight: '600',
+    color: '#111827',
+    margin: '0 0 0.25rem 0',
+  }
+
+  const cardDescriptionStyle: React.CSSProperties = {
+    fontSize: '0.875rem',
+    color: '#6b7280',
+    margin: 0,
   }
 
   return (
-    <RequireAuth>
-      <main style={{ padding: '2rem', fontFamily: 'system-ui, sans-serif' }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '2rem',
-          }}
-        >
-          <div>
-            <h1 style={{ margin: '0 0 0.5rem 0' }}>Dasbor</h1>
-            {user && (
-              <p style={{ margin: 0, color: '#666' }}>
-                Selamat datang, {user.name}
-              </p>
-            )}
-          </div>
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: '#dc2626',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
+    <div style={containerStyle}>
+      <div style={headerStyle}>
+        <h1 style={titleStyle}>Dasbor</h1>
+        <p style={subtitleStyle}>Sistem Manajemen Interview & Assessment</p>
+      </div>
+
+      <div style={welcomeStyle}>
+        Selamat datang, <strong>{user.name}</strong>!
+      </div>
+
+      <div style={gridStyle}>
+        {navigationCards.map((card) => (
+          <Link
+            key={card.to}
+            to={card.to}
+            style={cardStyle}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)'
+              e.currentTarget.style.transform = 'translateY(-2px)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)'
+              e.currentTarget.style.transform = 'translateY(0)'
             }}
           >
-            Keluar
-          </button>
-        </div>
-
-        <p style={{ color: '#666', marginBottom: '2rem' }}>
-          Sistem Manajemen Interview & Assessment
-        </p>
-
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '1rem',
-          }}
-        >
-          <div
-            style={{
-              padding: '1.5rem',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              backgroundColor: '#f9fafb',
-            }}
-          >
-            <h3 style={{ margin: '0 0 0.5rem 0' }}>Mitra</h3>
-            <p style={{ margin: 0, color: '#666', fontSize: '0.875rem' }}>
-              Kelola data mitra dan kandidat
-            </p>
-          </div>
-
-          <div
-            style={{
-              padding: '1.5rem',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              backgroundColor: '#f9fafb',
-            }}
-          >
-            <h3 style={{ margin: '0 0 0.5rem 0' }}>Wawancara</h3>
-            <p style={{ margin: 0, color: '#666', fontSize: '0.875rem' }}>
-              Kelola sesi wawancara
-            </p>
-          </div>
-
-          <div
-            style={{
-              padding: '1.5rem',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              backgroundColor: '#f9fafb',
-            }}
-          >
-            <h3 style={{ margin: '0 0 0.5rem 0' }}>Penilaian</h3>
-            <p style={{ margin: 0, color: '#666', fontSize: '0.875rem' }}>
-              Kelola penilaian dan asesmen
-            </p>
-          </div>
-        </div>
-      </main>
-    </RequireAuth>
+            <div style={cardContentStyle}>
+              <div style={iconContainerStyle(card.color)}>
+                {card.icon}
+              </div>
+              <div style={cardTextStyle}>
+                <h3 style={cardTitleStyle}>{card.title}</h3>
+                <p style={cardDescriptionStyle}>{card.description}</p>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
   )
 }
