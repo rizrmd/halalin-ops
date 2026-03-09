@@ -10,6 +10,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AssessmentsRouteImport } from './routes/assessments'
 import { Route as InterviewsRouteImport } from './routes/interviews'
+import { Route as InterviewsNewRouteImport } from './routes/interviews.new'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as PartnersRouteImport } from './routes/partners'
 import { Route as PartnersIdRouteImport } from './routes/partners.$id'
@@ -32,6 +33,12 @@ const InterviewsRoute = InterviewsRouteImport.update({
   id: '/interviews',
   path: '/interviews',
   getParentRoute: () => rootRouteImport,
+} as any)
+
+const InterviewsNewRoute = InterviewsNewRouteImport.update({
+  id: '/interviews/new',
+  path: '/new',
+  getParentRoute: () => InterviewsRoute,
 } as any)
 
 const LoginRoute = LoginRouteImport.update({
@@ -69,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/assessments': typeof AssessmentsRoute
   '/interviews': typeof InterviewsRoute
+  '/interviews/new': typeof InterviewsNewRoute
   '/login': typeof LoginRoute
   '/partners': typeof PartnersRoute
   '/partners/$id': typeof PartnersIdRoute
@@ -80,6 +88,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/assessments': typeof AssessmentsRoute
   '/interviews': typeof InterviewsRoute
+  '/interviews/new': typeof InterviewsNewRoute
   '/login': typeof LoginRoute
   '/partners': typeof PartnersRoute
   '/partners/$id': typeof PartnersIdRoute
@@ -92,6 +101,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/assessments': typeof AssessmentsRoute
   '/interviews': typeof InterviewsRoute
+  '/interviews/new': typeof InterviewsNewRoute
   '/login': typeof LoginRoute
   '/partners': typeof PartnersRoute
   '/partners/$id': typeof PartnersIdRoute
@@ -100,10 +110,10 @@ export interface FileRoutesById {
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/assessments' | '/interviews' | '/login' | '/partners' | '/partners/$id' | '/partners/new'
+  fullPaths: '/' | '/about' | '/assessments' | '/interviews' | '/interviews/new' | '/login' | '/partners' | '/partners/$id' | '/partners/new'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/assessments' | '/interviews' | '/login' | '/partners' | '/partners/$id' | '/partners/new'
-  id: '__root__' | '/' | '/about' | '/assessments' | '/interviews' | '/login' | '/partners' | '/partners/$id' | '/partners/new'
+  to: '/' | '/about' | '/assessments' | '/interviews' | '/interviews/new' | '/login' | '/partners' | '/partners/$id' | '/partners/new'
+  id: '__root__' | '/' | '/about' | '/assessments' | '/interviews' | '/interviews/new' | '/login' | '/partners' | '/partners/$id' | '/partners/new'
   fileRoutesById: FileRoutesById
 }
 
@@ -112,6 +122,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AssessmentsRoute: typeof AssessmentsRoute
   InterviewsRoute: typeof InterviewsRoute
+  InterviewsNewRoute: typeof InterviewsNewRoute
   LoginRoute: typeof LoginRoute
   PartnersRoute: typeof PartnersRoute
   PartnersIdRoute: typeof PartnersIdRoute
@@ -147,6 +158,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/interviews'
       preLoaderRoute: typeof InterviewsRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/interviews/new': {
+      id: '/interviews/new'
+      path: '/new'
+      fullPath: '/interviews/new'
+      preLoaderRoute: typeof InterviewsNewRouteImport
+      parentRoute: typeof InterviewsRoute
     }
     '/login': {
       id: '/login'
@@ -184,6 +202,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AssessmentsRoute: AssessmentsRoute,
   InterviewsRoute: InterviewsRoute,
+  InterviewsNewRoute: InterviewsNewRoute,
   LoginRoute: LoginRoute,
   PartnersRoute: PartnersRoute,
   PartnersIdRoute: PartnersIdRoute,
