@@ -80,3 +80,42 @@ All user-facing text should be in Indonesian:
 - "Cancel" → "Batal"
 - "Partner" → "Mitra"
 - "Assessment" → "Penilaian"
+
+### Navigation Pattern
+Use TanStack Router's `useRouter` hook for navigation instead of `window.location.href` to avoid full page reloads:
+
+```typescript
+import { useRouter } from '@tanstack/react-router';
+
+function MyComponent() {
+  const router = useRouter();
+  
+  const handleNavigate = () => {
+    router.navigate({ to: '/partners' });
+  };
+}
+```
+
+### File-Based Routing Limitations
+TanStack Router's file-based auto-generation has limitations with dot notation:
+- Files like `partners.new.tsx` won't auto-generate routes
+- Use `$` notation instead: `partners.$new.tsx`
+- Or manually update `routeTree.gen.ts` if using dot notation
+
+### Responsive Table Pattern
+For data tables with mobile support:
+- Desktop: Use `<table>` with proper columns
+- Mobile (< 640px): Transform to card view with stacked rows
+- See `app/routes/partners.tsx` for implementation reference
+
+### Pagination Pattern
+Server-side pagination with Prisma:
+
+```typescript
+const skip = (page - 1) * pageSize;
+const [partners, total] = await Promise.all([
+  prisma.partners.findMany({ skip, take: pageSize }),
+  prisma.partners.count()
+]);
+const totalPages = Math.ceil(total / pageSize);
+```
