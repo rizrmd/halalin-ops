@@ -5,19 +5,16 @@ import { getPartners, type PartnersResponse, type PartnerListItem } from '../ser
 export const Route = createFileRoute('/partners')({
   component: PartnersComponent,
   beforeLoad: async ({ context }) => {
-    // Check authentication - redirect to login if user is not authenticated
     if (!context.user) {
       throw new Error('UNAUTHORIZED')
     }
     return { user: context.user }
   },
   loader: async (): Promise<PartnersResponse> => {
-    // Initial load with page 1
     return await getPartners({ data: { page: 1, pageSize: 20 } })
   },
 })
 
-// Helper to format partner type for display
 function formatPartnerType(type: string): string {
   const typeMap: Record<string, string> = {
     candidate: 'Kandidat',
@@ -31,7 +28,6 @@ function formatPartnerType(type: string): string {
 }
 
 function PartnersComponent() {
-  const { user } = Route.useRouteContext() as { user: { id: string; name: string; email: string | null; partnerType: string } }
   const initialData = Route.useLoaderData() as PartnersResponse
   const [partners, setPartners] = React.useState<PartnerListItem[]>(initialData.partners)
   const [currentPage, setCurrentPage] = React.useState(initialData.currentPage)
@@ -55,6 +51,10 @@ function PartnersComponent() {
     }
   }
 
+  const handleCreatePartner = () => {
+    window.location.href = '/partners/new'
+  }
+
   const containerStyle: React.CSSProperties = {
     maxWidth: '1280px',
     margin: '0 auto',
@@ -66,6 +66,8 @@ function PartnersComponent() {
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: '1.5rem',
+    flexWrap: 'wrap',
+    gap: '1rem',
   }
 
   const titleStyle: React.CSSProperties = {
@@ -73,6 +75,27 @@ function PartnersComponent() {
     fontWeight: 'bold',
     color: '#111827',
     margin: 0,
+  }
+
+  const headerActionsStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
+  }
+
+  const createButtonStyle: React.CSSProperties = {
+    padding: '0.625rem 1rem',
+    backgroundColor: '#2563eb',
+    color: 'white',
+    border: '1px solid #2563eb',
+    borderRadius: '0.375rem',
+    fontSize: '0.875rem',
+    fontWeight: 500,
+    cursor: 'pointer',
+    minHeight: '44px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
   }
 
   const tableContainerStyle: React.CSSProperties = {
@@ -107,7 +130,6 @@ function PartnersComponent() {
     fontWeight: 600,
     color: '#374151',
     textTransform: 'uppercase',
-    letterSpacing: '0.05em',
     borderBottom: '1px solid #e5e7eb',
   }
 
@@ -116,10 +138,6 @@ function PartnersComponent() {
     borderBottom: '1px solid #e5e7eb',
     color: '#374151',
     fontSize: '0.875rem',
-  }
-
-  const trHoverStyle: React.CSSProperties = {
-    transition: 'background-color 0.15s ease',
   }
 
   const paginationStyle: React.CSSProperties = {
@@ -132,16 +150,6 @@ function PartnersComponent() {
     gap: '0.5rem',
   }
 
-  const paginationInfoStyle: React.CSSProperties = {
-    fontSize: '0.875rem',
-    color: '#6b7280',
-  }
-
-  const paginationButtonsStyle: React.CSSProperties = {
-    display: 'flex',
-    gap: '0.25rem',
-  }
-
   const buttonBaseStyle: React.CSSProperties = {
     padding: '0.5rem 0.75rem',
     border: '1px solid #d1d5db',
@@ -150,12 +158,8 @@ function PartnersComponent() {
     fontSize: '0.875rem',
     cursor: 'pointer',
     borderRadius: '0.375rem',
-    transition: 'all 0.15s ease',
     minWidth: '44px',
     minHeight: '44px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
   }
 
   const buttonDisabledStyle: React.CSSProperties = {
@@ -172,38 +176,10 @@ function PartnersComponent() {
     borderColor: '#2563eb',
   }
 
-  // Responsive card view for mobile
   const mobileCardStyle: React.CSSProperties = {
     display: 'block',
     padding: '1rem',
     borderBottom: '1px solid #e5e7eb',
-    backgroundColor: 'white',
-  }
-
-  const mobileCardLastStyle: React.CSSProperties = {
-    ...mobileCardStyle,
-    borderBottom: 'none',
-  }
-
-  const mobileCardLabelStyle: React.CSSProperties = {
-    fontSize: '0.75rem',
-    color: '#6b7280',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-    marginBottom: '0.25rem',
-  }
-
-  const mobileCardValueStyle: React.CSSProperties = {
-    fontSize: '0.875rem',
-    color: '#111827',
-    fontWeight: 500,
-  }
-
-  const mobileCardRowStyle: React.CSSProperties = {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '0.75rem',
-    marginBottom: '0.75rem',
   }
 
   const partnerTypeBadgeStyle: React.CSSProperties = {
@@ -216,53 +192,38 @@ function PartnersComponent() {
     fontWeight: 600,
   }
 
-  // Partner link styles
-  const partnerLinkStyle: React.CSSProperties = {
-    fontWeight: 500,
-    color: '#111827',
-    textDecoration: 'none',
-  }
-
-  // CSS for responsive table
-  const responsiveStyle = `
-    @media (max-width: 640px) {
-      .desktop-table { display: none !important; }
-      .mobile-cards { display: block !important; }
-    }
-    @media (min-width: 641px) {
-      .mobile-cards { display: none !important; }
-    }
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-  `
-
   const startItem = totalCount > 0 ? (currentPage - 1) * 20 + 1 : 0
   const endItem = Math.min(currentPage * 20, totalCount)
 
   return (
     <div style={containerStyle}>
-      <style dangerouslySetInnerHTML={{ __html: responsiveStyle }} />
+      <style>{`
+        @media (max-width: 640px) {
+          .desktop-table { display: none !important; }
+          .mobile-cards { display: block !important; }
+        }
+        @media (min-width: 641px) {
+          .mobile-cards { display: none !important; }
+        }
+      `}</style>
+
       <div style={headerStyle}>
         <h1 style={titleStyle}>Daftar Mitra</h1>
-        <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-          Total: {totalCount} mitra
-        </span>
+        <div style={headerActionsStyle}>
+          <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>Total: {totalCount} mitra</span>
+          <button onClick={handleCreatePartner} style={createButtonStyle}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z" />
+            </svg>
+            Tambah Mitra
+          </button>
+        </div>
       </div>
 
       {isLoading ? (
-        <div style={loadingStyle}>
-          <div style={{ marginBottom: '0.5rem' }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ animation: 'spin 1s linear infinite' }}>
-              <circle cx="12" cy="12" r="10" stroke="#6b7280" strokeWidth="4" strokeDasharray="60" strokeDashoffset="20" />
-            </svg>
-          </div>
-          <p>Memuat data mitra...</p>
-        </div>
+        <div style={loadingStyle}>Memuat data mitra...</div>
       ) : (
         <div style={tableContainerStyle}>
-          {/* Desktop Table View */}
           <table className="desktop-table" style={tableStyle}>
             <thead>
               <tr>
@@ -274,57 +235,19 @@ function PartnersComponent() {
             </thead>
             <tbody>
               {partners.length === 0 ? (
-                <tr>
-                  <td colSpan={4} style={emptyStyle}>
-                    Tidak ada data mitra yang tersedia.
-                  </td>
-                </tr>
+                <tr><td colSpan={4} style={emptyStyle}>Tidak ada data mitra yang tersedia.</td></tr>
               ) : (
-                partners.map((partner: PartnerListItem, index: number) => (
-                  <tr
-                    key={partner.id}
-                    style={{ ...trHoverStyle, backgroundColor: index % 2 === 1 ? '#f9fafb' : 'white' }}
-                  >
+                partners.map((partner) => (
+                  <tr key={partner.id}>
                     <td style={tdStyle}>
-                      <div>
-                        <a
-                          href={`/partners/${partner.id}`}
-                          style={partnerLinkStyle}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.color = '#2563eb'
-                            e.currentTarget.style.textDecoration = 'underline'
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.color = '#111827'
-                            e.currentTarget.style.textDecoration = 'none'
-                          }}
-                        >
-                          {partner.full_name}
-                        </a>
-                      </div>
+                      <a href={`/partners/${partner.id}`} style={{ color: '#111827', textDecoration: 'none' }}>
+                        {partner.full_name}
+                      </a>
                     </td>
+                    <td style={tdStyle}>{partner.email || '-'}</td>
+                    <td style={tdStyle}>{partner.phone || '-'}</td>
                     <td style={tdStyle}>
-                      {partner.email ? (
-                        <a href={`mailto:${partner.email}`} style={{ color: '#2563eb', textDecoration: 'none' }}>
-                          {partner.email}
-                        </a>
-                      ) : (
-                        <span style={{ color: '#9ca3af' }}>-</span>
-                      )}
-                    </td>
-                    <td style={tdStyle}>
-                      {partner.phone ? (
-                        <a href={`tel:${partner.phone}`} style={{ color: '#2563eb', textDecoration: 'none' }}>
-                          {partner.phone}
-                        </a>
-                      ) : (
-                        <span style={{ color: '#9ca3af' }}>-</span>
-                      )}
-                    </td>
-                    <td style={tdStyle}>
-                      <span style={partnerTypeBadgeStyle}>
-                        {formatPartnerType(partner.partner_type)}
-                      </span>
+                      <span style={partnerTypeBadgeStyle}>{formatPartnerType(partner.partner_type)}</span>
                     </td>
                   </tr>
                 ))
@@ -332,81 +255,25 @@ function PartnersComponent() {
             </tbody>
           </table>
 
-          {/* Mobile Card View */}
           <div className="mobile-cards">
             {partners.length === 0 ? (
               <div style={emptyStyle}>Tidak ada data mitra yang tersedia.</div>
             ) : (
-              partners.map((partner: PartnerListItem, index: number) => (
-                <div key={partner.id} style={index === partners.length - 1 ? mobileCardLastStyle : mobileCardStyle}>
-                  <div style={mobileCardRowStyle}>
-                    <div>
-                      <div style={mobileCardLabelStyle}>Nama</div>
-                      <div style={mobileCardValueStyle}>
-                        <a
-                          href={`/partners/${partner.id}`}
-                          style={partnerLinkStyle}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.color = '#2563eb'
-                            e.currentTarget.style.textDecoration = 'underline'
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.color = '#111827'
-                            e.currentTarget.style.textDecoration = 'none'
-                          }}
-                        >
-                          {partner.full_name}
-                        </a>
-                      </div>
-                    </div>
-                    <div>
-                      <div style={mobileCardLabelStyle}>Tipe Mitra</div>
-                      <div>
-                        <span style={partnerTypeBadgeStyle}>
-                          {formatPartnerType(partner.partner_type)}
-                        </span>
-                      </div>
-                    </div>
+              partners.map((partner) => (
+                <div key={partner.id} style={mobileCardStyle}>
+                  <div>
+                    <a href={`/partners/${partner.id}`}>{partner.full_name}</a>
                   </div>
-                  <div style={mobileCardRowStyle}>
-                    <div>
-                      <div style={mobileCardLabelStyle}>Email</div>
-                      <div style={mobileCardValueStyle}>
-                        {partner.email ? (
-                          <a href={`mailto:${partner.email}`} style={{ color: '#2563eb', textDecoration: 'none' }}>
-                            {partner.email}
-                          </a>
-                        ) : (
-                          <span style={{ color: '#9ca3af' }}>-</span>
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <div style={mobileCardLabelStyle}>Telepon</div>
-                      <div style={mobileCardValueStyle}>
-                        {partner.phone ? (
-                          <a href={`tel:${partner.phone}`} style={{ color: '#2563eb', textDecoration: 'none' }}>
-                            {partner.phone}
-                          </a>
-                        ) : (
-                          <span style={{ color: '#9ca3af' }}>-</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  <div>{formatPartnerType(partner.partner_type)}</div>
                 </div>
               ))
             )}
           </div>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div style={paginationStyle}>
-              <div style={paginationInfoStyle}>
-                Menampilkan {startItem} - {endItem} dari {totalCount} data
-              </div>
-              <div style={paginationButtonsStyle}>
-                {/* Previous button */}
+              <div>Menampilkan {startItem} - {endItem} dari {totalCount} data</div>
+              <div style={{ display: 'flex', gap: '0.25rem' }}>
                 <button
                   onClick={() => loadPage(currentPage - 1)}
                   disabled={currentPage === 1 || isLoading}
@@ -414,33 +281,18 @@ function PartnersComponent() {
                 >
                   &larr;
                 </button>
-                {/* Page buttons */}
                 {Array.from({ length: totalPages }, (_, i) => i + 1)
-                  .filter(page => {
-                    // Show first 2, last 2, and pages around current
-                    return page <= 2 || page > totalPages - 2 || Math.abs(page - currentPage) <= 1
-                  })
-                  .map((page: number, index: number, arr: number[]) => {
-                    // Add ellipsis if there's a gap
-                    if (index > 0 && page - arr[index - 1] > 1) {
-                      return (
-                        <span key={`ellipsis-${page}`} style={{ padding: '0.5rem', color: '#6b7280' }}>
-                          ...
-                        </span>
-                      )
-                    }
-                    return (
-                      <button
-                        key={page}
-                        onClick={() => loadPage(page)}
-                        disabled={isLoading}
-                        style={page === currentPage ? buttonActiveStyle : buttonBaseStyle}
-                      >
-                        {page}
-                      </button>
-                    )
-                  })}
-                {/* Next button */}
+                  .filter(page => page <= 2 || page > totalPages - 2 || Math.abs(page - currentPage) <= 1)
+                  .map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => loadPage(page)}
+                      disabled={isLoading}
+                      style={page === currentPage ? buttonActiveStyle : buttonBaseStyle}
+                    >
+                      {page}
+                    </button>
+                  ))}
                 <button
                   onClick={() => loadPage(currentPage + 1)}
                   disabled={currentPage === totalPages || isLoading}
