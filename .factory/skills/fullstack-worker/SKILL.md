@@ -56,6 +56,8 @@ Implement in this order:
 ### 5. Manual Verification
 - Start dev server: `npm run dev` (uses port from services.yaml)
 - Verify page loads without errors
+- **Test mobile responsiveness** at 375px, 768px, and 1280px viewports
+- Verify touch targets are at least 44x44px on mobile
 - Test all user interactions manually
 - Check browser console for errors
 - Verify data persists to database
@@ -84,7 +86,9 @@ Implement in this order:
       { "command": "curl http://localhost:3000/api/partners", "exitCode": 0, "observation": "Returns JSON array of partners" }
     ],
     "interactiveChecks": [
-      { "action": "Navigated to /partners in browser", "observed": "Page loaded with partner list table, Indonesian column headers displayed correctly" },
+      { "action": "Navigated to /partners in browser at 375px viewport", "observed": "Page loaded with responsive layout, table scrollable horizontally or stacked as cards" },
+      { "action": "Navigated to /partners at 768px viewport", "observed": "Layout adapts to tablet size" },
+      { "action": "Navigated to /partners at 1280px viewport", "observed": "Full desktop layout displayed" },
       { "action": "Clicked on partner row", "observed": "Navigation to partner detail page works" }
     ]
   },

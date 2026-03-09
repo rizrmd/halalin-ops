@@ -1,0 +1,10 @@
+import { defineConfig } from '@tanstack/react-start/config'
+
+export default defineConfig({
+  server: {
+    // Server-side configuration
+  },
+  vite: {
+    // Vite plugins and configuration
+  },
+})

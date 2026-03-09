@@ -80,6 +80,8 @@ export async function destroySession() {
 ### 5. Manual Verification
 - Start dev server
 - Navigate to `/login`
+- **Test mobile responsiveness** at 375px, 768px, and 1280px viewports
+- Test login form usability on mobile (touch targets >= 44x44px)
 - Test login with valid credentials
 - Verify session persists across page reloads
 - Test logout clears session
@@ -105,7 +107,9 @@ export async function destroySession() {
       { "command": "npm run test -- auth", "exitCode": 0, "observation": "4 auth tests passing" }
     ],
     "interactiveChecks": [
-      { "action": "Visited /login", "observed": "Login form displayed with Indonesian labels (Email, Kata Sandi, Masuk)" },
+      { "action": "Visited /login at 375px viewport", "observed": "Login form displayed with Indonesian labels, form inputs are full-width, submit button is touch-friendly" },
+      { "action": "Visited /login at 768px viewport", "observed": "Login form centered with appropriate width" },
+      { "action": "Visited /login at 1280px viewport", "observed": "Login form properly sized for desktop" },
       { "action": "Logged in with valid credentials", "observed": "Redirected to dashboard, user name shown in header" },
       { "action": "Clicked logout", "observed": "Session cleared, redirected to login page" },
       { "action": "Tried accessing /partners without login", "observed": "Redirected to /login with ?redirectTo parameter" }

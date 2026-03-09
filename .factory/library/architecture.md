@@ -1,0 +1,82 @@
+# Architecture
+
+Architectural decisions, patterns, and conventions.
+
+---
+
+## Tech Stack
+
+- **Framework**: TanStack Start (full-stack React)
+- **Database ORM**: Prisma
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS (optional)
+- **Forms**: TanStack Form or React Hook Form + Zod
+- **Authentication**: Session-based (signed JWT cookies)
+
+---
+
+## Directory Structure
+
+```
+app/
+├── routes/           # TanStack Router routes
+│   ├── __root.tsx    # Root layout
+│   ├── index.tsx     # Home page
+│   ├── login.tsx     # Login page
+│   └── ...
+├── server/           # Server-only code
+│   ├── db.ts         # Prisma client singleton
+│   ├── session.ts    # Session management
+│   └── auth.ts       # Auth server functions
+├── components/       # Shared React components
+├── hooks/            # Custom React hooks
+├── generated/        # Generated code (Prisma client)
+└── styles/           # Global styles
+prisma/
+└── schema.prisma     # Database schema
+public/               # Static assets
+```
+
+---
+
+## Patterns
+
+### Server Functions (TanStack Start)
+Use `createServerFn` for all server-side operations:
+
+```typescript
+import { createServerFn } from '@tanstack/react-start';
+
+export const getData = createServerFn({ method: 'GET' })
+  .handler(async () => {
+    // Server-side code
+  });
+```
+
+### Prisma Client Singleton
+Always use the singleton from `app/server/db.ts`:
+
+```typescript
+import { prisma } from '~/server/db';
+```
+
+### Route Loaders
+Fetch data on load using route loaders:
+
+```typescript
+export const Route = createFileRoute('/partners')({
+  component: PartnersPage,
+  loader: async () => {
+    return await getPartners();
+  },
+});
+```
+
+### Indonesian UI Labels
+All user-facing text should be in Indonesian:
+- "Login" → "Masuk"
+- "Submit" → "Kirim"
+- "Save" → "Simpan"
+- "Cancel" → "Batal"
+- "Partner" → "Mitra"
+- "Assessment" → "Penilaian"
