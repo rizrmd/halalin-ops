@@ -2,6 +2,13 @@ import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/about')({
   component: About,
+  beforeLoad: async ({ context }) => {
+    // Check authentication - redirect to login if user is not authenticated
+    if (!context.user) {
+      throw new Error('UNAUTHORIZED')
+    }
+    return { user: context.user }
+  },
 })
 
 function About() {
