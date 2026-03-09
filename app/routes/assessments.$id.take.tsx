@@ -184,8 +184,9 @@ function TakeAssessmentComponent() {
       }
 
       setSuccess(true)
+      // Redirect to results page to show scores and correct answers
       setTimeout(() => {
-        window.location.href = '/assessments'
+        window.location.href = `/assessments/${session.id}/results`
       }, 2000)
     } catch (err) {
       console.error('Error submitting assessment:', err)

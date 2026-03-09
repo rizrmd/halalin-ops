@@ -663,9 +663,15 @@ export const submitAssessment = createServerFn({ method: 'POST' })
           // Essay questions - score will be manually assigned later
           essayScore += Number(response.awarded_score || 0) * weight
         } else {
-          // Objective questions (single_choice, multiple_choice, etc.)
+          // Objective questions (single_choice, multiple_choice, rating, date, boolean)
+          // Calculate score based on correct answers
           if (response.selected_option_id && response.question_options) {
-            objectiveScore += Number(response.question_options.score_value) * weight
+            // Use is_correct to determine if answer is correct
+            if (response.question_options.is_correct) {
+              // If the selected option is correct, award the score_value
+              objectiveScore += Number(response.question_options.score_value) * weight
+            }
+            // If not correct, no points awarded (0)
           }
         }
       }
@@ -692,5 +698,194 @@ export const submitAssessment = createServerFn({ method: 'POST' })
     } catch (error) {
       console.error('Error submitting assessment:', error)
       return { success: false, error: 'Failed to submit assessment' }
+    }
+  })
+
+/**
+ * Assessment result details for display
+ */
+export interface QuestionResult {
+  id: string
+  prompt: string
+  question_type: string
+  section_title: string | null
+  user_answer: string | null
+  selected_option_label: string | null
+  correct_option_label: string | null
+  is_correct: boolean | null
+  awarded_score: number
+  max_score: number
+}
+
+export interface AssessmentResultResponse {
+  session: AssessmentAttemptSession
+  results: QuestionResult[]
+  totalQuestions: number
+  correctAnswers: number
+  incorrectAnswers: number
+}
+
+/**
+ * Get assessment results for display after submission
+ */
+export const getAssessmentResults = createServerFn({ method: 'GET' })
+  .inputValidator((data: unknown): { attemptId: string } => {
+    if (typeof data !== 'object' || data === null) {
+      throw new Error('Invalid input')
+    }
+    const { attemptId } = data as Record<string, unknown>
+    if (typeof attemptId !== 'string' || !attemptId) {
+      throw new Error('Attempt ID is required')
+    }
+    return { attemptId }
+  })
+  .handler(async ({ data }): Promise<AssessmentResultResponse> => {
+    const { attemptId } = data
+
+    // Get assessment attempt with participant and question bank info
+    const attempt = await prisma.assessment_attempts.findUnique({
+      where: { id: attemptId },
+      select: {
+        id: true,
+        bank_id: true,
+        participant_id: true,
+        submission_code: true,
+        started_at: true,
+        submitted_at: true,
+        objective_score: true,
+        essay_score: true,
+        total_score: true,
+        competency_result: true,
+        partners_assessment_attempts_participant_idTopartners: {
+          select: {
+            full_name: true,
+          },
+        },
+        question_banks: {
+          select: {
+            title: true,
+            template_code: true,
+          },
+        },
+      },
+    })
+
+    if (!attempt) {
+      throw new Error('Assessment attempt not found')
+    }
+
+    const session: AssessmentAttemptSession = {
+      id: attempt.id,
+      bank_id: attempt.bank_id,
+      participant_id: attempt.participant_id,
+      participant_name: attempt.partners_assessment_attempts_participant_idTopartners.full_name,
+      template_title: attempt.question_banks.title,
+      template_code: attempt.question_banks.template_code,
+      submission_code: attempt.submission_code,
+      started_at: attempt.started_at?.toISOString() || null,
+      submitted_at: attempt.submitted_at?.toISOString() || null,
+      objective_score: Number(attempt.objective_score),
+      essay_score: Number(attempt.essay_score),
+      total_score: Number(attempt.total_score),
+      competency_result: attempt.competency_result,
+      is_completed: !!attempt.submitted_at,
+    }
+
+    // Get questions and responses
+    const questions = await prisma.questions.findMany({
+      where: {
+        bank_id: attempt.bank_id,
+      },
+      include: {
+        question_options: {
+          orderBy: {
+            sort_order: 'asc',
+          },
+        },
+      },
+      orderBy: {
+        sort_order: 'asc',
+      },
+    })
+
+    // Get user responses
+    const responses = await prisma.assessment_responses.findMany({
+      where: {
+        attempt_id: attemptId,
+      },
+      include: {
+        question_options: {
+          select: {
+            option_label: true,
+            is_correct: true,
+            score_value: true,
+          },
+        },
+        questions: {
+          select: {
+            id: true,
+            question_type: true,
+          },
+        },
+      },
+    })
+
+    // Build results
+    const results: QuestionResult[] = []
+    let correctAnswers = 0
+    let incorrectAnswers = 0
+
+    for (const question of questions) {
+      const response = responses.find(r => r.question_id === question.id)
+      
+      // Find the correct option(s)
+      const correctOptions = question.question_options.filter(opt => opt.is_correct)
+      const correctOptionLabels = correctOptions.map(opt => opt.option_label).join(', ')
+      const maxScore = correctOptions.reduce((sum, opt) => sum + Number(opt.score_value), 0)
+
+      let userAnswer: string | null = null
+      let selectedOptionLabel: string | null = null
+      let isCorrect: boolean | null = null
+      let awardedScore = 0
+
+      if (response) {
+        userAnswer = response.answer_text
+        awardedScore = Number(response.awarded_score)
+
+        if (response.question_options) {
+          selectedOptionLabel = response.question_options.option_label
+          isCorrect = response.question_options.is_correct
+
+          if (isCorrect) {
+            correctAnswers++
+          } else {
+            incorrectAnswers++
+          }
+        } else if (question.question_type === 'short_text' || question.question_type === 'long_text') {
+          // Essay questions don't have correct/incorrect
+          awardedScore = Number(response.awarded_score)
+        }
+      }
+
+      results.push({
+        id: question.id,
+        prompt: question.prompt,
+        question_type: question.question_type,
+        section_title: question.section_title,
+        user_answer: userAnswer,
+        selected_option_label: selectedOptionLabel,
+        correct_option_label: correctOptionLabels,
+        is_correct: isCorrect,
+        awarded_score: awardedScore,
+        max_score: maxScore,
+      })
+    }
+
+    return {
+      session,
+      results,
+      totalQuestions: questions.length,
+      correctAnswers,
+      incorrectAnswers,
     }
   })
