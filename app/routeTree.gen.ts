@@ -11,6 +11,7 @@ import { Route as AssessmentsRouteImport } from './routes/assessments'
 import { Route as InterviewsRouteImport } from './routes/interviews'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as PartnersRouteImport } from './routes/partners'
+import { Route as PartnersIdRouteImport } from './routes/partners.$id'
 import { Route as IndexRouteImport } from './routes/index'
 
 const AboutRoute = AboutRouteImport.update({
@@ -43,6 +44,12 @@ const PartnersRoute = PartnersRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 
+const PartnersIdRoute = PartnersIdRouteImport.update({
+  id: '/partners/$id',
+  path: '/$id',
+  getParentRoute: () => PartnersRoute,
+} as any)
+
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -56,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/interviews': typeof InterviewsRoute
   '/login': typeof LoginRoute
   '/partners': typeof PartnersRoute
+  '/partners/$id': typeof PartnersIdRoute
 }
 
 export interface FileRoutesByTo {
@@ -75,14 +83,15 @@ export interface FileRoutesById {
   '/interviews': typeof InterviewsRoute
   '/login': typeof LoginRoute
   '/partners': typeof PartnersRoute
+  '/partners/$id': typeof PartnersIdRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/assessments' | '/interviews' | '/login' | '/partners'
+  fullPaths: '/' | '/about' | '/assessments' | '/interviews' | '/login' | '/partners' | '/partners/$id'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/about' | '/assessments' | '/interviews' | '/login' | '/partners'
-  id: '__root__' | '/' | '/about' | '/assessments' | '/interviews' | '/login' | '/partners'
+  id: '__root__' | '/' | '/about' | '/assessments' | '/interviews' | '/login' | '/partners' | '/partners/$id'
   fileRoutesById: FileRoutesById
 }
 
@@ -93,6 +102,7 @@ export interface RootRouteChildren {
   InterviewsRoute: typeof InterviewsRoute
   LoginRoute: typeof LoginRoute
   PartnersRoute: typeof PartnersRoute
+  PartnersIdRoute: typeof PartnersIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -139,6 +149,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PartnersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/partners/$id': {
+      id: '/partners/$id'
+      path: '/$id'
+      fullPath: '/partners/$id'
+      preLoaderRoute: typeof PartnersIdRouteImport
+      parentRoute: typeof PartnersRoute
+    }
   }
 }
 
@@ -149,6 +166,7 @@ const rootRouteChildren: RootRouteChildren = {
   InterviewsRoute: InterviewsRoute,
   LoginRoute: LoginRoute,
   PartnersRoute: PartnersRoute,
+  PartnersIdRoute: PartnersIdRoute,
 }
 
 export const routeTree = rootRouteImport

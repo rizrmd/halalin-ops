@@ -33,7 +33,6 @@ function formatPartnerType(type: string): string {
 function PartnersComponent() {
   const { user } = Route.useRouteContext() as { user: { id: string; name: string; email: string | null; partnerType: string } }
   const initialData = Route.useLoaderData() as PartnersResponse
-
   const [partners, setPartners] = React.useState<PartnerListItem[]>(initialData.partners)
   const [currentPage, setCurrentPage] = React.useState(initialData.currentPage)
   const [totalPages, setTotalPages] = React.useState(initialData.totalPages)
@@ -42,7 +41,6 @@ function PartnersComponent() {
 
   const loadPage = async (page: number) => {
     if (page < 1 || page > totalPages || page === currentPage) return
-
     setIsLoading(true)
     try {
       const response = await getPartners({ data: { page, pageSize: 20 } })
@@ -218,6 +216,13 @@ function PartnersComponent() {
     fontWeight: 600,
   }
 
+  // Partner link styles
+  const partnerLinkStyle: React.CSSProperties = {
+    fontWeight: 500,
+    color: '#111827',
+    textDecoration: 'none',
+  }
+
   // CSS for responsive table
   const responsiveStyle = `
     @media (max-width: 640px) {
@@ -278,14 +283,24 @@ function PartnersComponent() {
                 partners.map((partner: PartnerListItem, index: number) => (
                   <tr
                     key={partner.id}
-                    style={{
-                      ...trHoverStyle,
-                      backgroundColor: index % 2 === 1 ? '#f9fafb' : 'white',
-                    }}
+                    style={{ ...trHoverStyle, backgroundColor: index % 2 === 1 ? '#f9fafb' : 'white' }}
                   >
                     <td style={tdStyle}>
-                      <div style={{ fontWeight: 500, color: '#111827' }}>
-                        {partner.full_name}
+                      <div>
+                        <a
+                          href={`/partners/${partner.id}`}
+                          style={partnerLinkStyle}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = '#2563eb'
+                            e.currentTarget.style.textDecoration = 'underline'
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = '#111827'
+                            e.currentTarget.style.textDecoration = 'none'
+                          }}
+                        >
+                          {partner.full_name}
+                        </a>
                       </div>
                     </td>
                     <td style={tdStyle}>
@@ -320,19 +335,29 @@ function PartnersComponent() {
           {/* Mobile Card View */}
           <div className="mobile-cards">
             {partners.length === 0 ? (
-              <div style={emptyStyle}>
-                Tidak ada data mitra yang tersedia.
-              </div>
+              <div style={emptyStyle}>Tidak ada data mitra yang tersedia.</div>
             ) : (
               partners.map((partner: PartnerListItem, index: number) => (
-                <div
-                  key={partner.id}
-                  style={index === partners.length - 1 ? mobileCardLastStyle : mobileCardStyle}
-                >
+                <div key={partner.id} style={index === partners.length - 1 ? mobileCardLastStyle : mobileCardStyle}>
                   <div style={mobileCardRowStyle}>
                     <div>
                       <div style={mobileCardLabelStyle}>Nama</div>
-                      <div style={mobileCardValueStyle}>{partner.full_name}</div>
+                      <div style={mobileCardValueStyle}>
+                        <a
+                          href={`/partners/${partner.id}`}
+                          style={partnerLinkStyle}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = '#2563eb'
+                            e.currentTarget.style.textDecoration = 'underline'
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = '#111827'
+                            e.currentTarget.style.textDecoration = 'none'
+                          }}
+                        >
+                          {partner.full_name}
+                        </a>
+                      </div>
                     </div>
                     <div>
                       <div style={mobileCardLabelStyle}>Tipe Mitra</div>
@@ -389,7 +414,6 @@ function PartnersComponent() {
                 >
                   &larr;
                 </button>
-
                 {/* Page buttons */}
                 {Array.from({ length: totalPages }, (_, i) => i + 1)
                   .filter(page => {
@@ -416,7 +440,6 @@ function PartnersComponent() {
                       </button>
                     )
                   })}
-
                 {/* Next button */}
                 <button
                   onClick={() => loadPage(currentPage + 1)}
