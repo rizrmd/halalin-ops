@@ -10,6 +10,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AssessmentsRouteImport } from './routes/assessments'
 import { Route as AssessmentsNewRouteImport } from './routes/assessments.new'
+import { Route as AssessmentsIdTakeRouteImport } from './routes/assessments.$id.take'
 import { Route as InterviewsRouteImport } from './routes/interviews'
 import { Route as InterviewsIdRouteImport } from './routes/interviews.$id'
 import { Route as InterviewsNewRouteImport } from './routes/interviews.new'
@@ -35,6 +36,12 @@ const AssessmentsRoute = AssessmentsRouteImport.update({
 const AssessmentsNewRoute = AssessmentsNewRouteImport.update({
   id: '/assessments/new',
   path: '/new',
+  getParentRoute: () => AssessmentsRoute,
+} as any)
+
+const AssessmentsIdTakeRoute = AssessmentsIdTakeRouteImport.update({
+  id: '/assessments/$id/take',
+  path: '/$id/take',
   getParentRoute: () => AssessmentsRoute,
 } as any)
 
@@ -97,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/assessments': typeof AssessmentsRoute
   '/assessments/new': typeof AssessmentsNewRoute
+  '/assessments/$id/take': typeof AssessmentsIdTakeRoute
   '/interviews': typeof InterviewsRoute
   '/interviews/$id': typeof InterviewsIdRoute
   '/interviews/new': typeof InterviewsNewRoute
@@ -112,6 +120,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/assessments': typeof AssessmentsRoute
   '/assessments/new': typeof AssessmentsNewRoute
+  '/assessments/$id/take': typeof AssessmentsIdTakeRoute
   '/interviews': typeof InterviewsRoute
   '/interviews/$id': typeof InterviewsIdRoute
   '/interviews/new': typeof InterviewsNewRoute
@@ -128,6 +137,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/assessments': typeof AssessmentsRoute
   '/assessments/new': typeof AssessmentsNewRoute
+  '/assessments/$id/take': typeof AssessmentsIdTakeRoute
   '/interviews': typeof InterviewsRoute
   '/interviews/$id': typeof InterviewsIdRoute
   '/interviews/new': typeof InterviewsNewRoute
@@ -140,7 +150,7 @@ export interface FileRoutesById {
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/assessments' | '/assessments/new' | '/interviews' | '/interviews/$id' | '/interviews/new' | '/interviews/$id/conduct' | '/login' | '/partners' | '/partners/$id' | '/partners/new'
+  fullPaths: '/' | '/about' | '/assessments' | '/assessments/new' | '/assessments/$id/take' | '/interviews' | '/interviews/$id' | '/interviews/new' | '/interviews/$id/conduct' | '/login' | '/partners' | '/partners/$id' | '/partners/new'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/about' | '/assessments' | '/assessments/new' | '/interviews' | '/interviews/$id' | '/interviews/new' | '/interviews/$id/conduct' | '/login' | '/partners' | '/partners/$id' | '/partners/new'
   id: '__root__' | '/' | '/about' | '/assessments' | '/assessments/new' | '/interviews' | '/interviews/$id' | '/interviews/new' | '/interviews/$id/conduct' | '/login' | '/partners' | '/partners/$id' | '/partners/new'
@@ -190,6 +200,13 @@ declare module '@tanstack/react-router' {
       path: '/new'
       fullPath: '/assessments/new'
       preLoaderRoute: typeof AssessmentsNewRouteImport
+      parentRoute: typeof AssessmentsRoute
+    }
+    '/assessments/$id/take': {
+      id: '/assessments/$id/take'
+      path: '/$id/take'
+      fullPath: '/assessments/$id/take'
+      preLoaderRoute: typeof AssessmentsIdTakeRouteImport
       parentRoute: typeof AssessmentsRoute
     }
     '/interviews': {
@@ -256,6 +273,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AssessmentsRoute: AssessmentsRoute,
   AssessmentsNewRoute: AssessmentsNewRoute,
+  AssessmentsIdTakeRoute: AssessmentsIdTakeRoute,
   InterviewsRoute: InterviewsRoute,
   InterviewsIdRoute: InterviewsIdRoute,
   InterviewsNewRoute: InterviewsNewRoute,
