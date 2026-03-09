@@ -4,9 +4,13 @@ import {
   getConductInterview,
   saveInterviewResponse,
   completeInterview,
+  getScoringCriteria,
+  saveInterviewScore,
+  calculateInterviewResult,
   type ConductInterviewResponse,
   type QuestionWithOption,
   type InterviewResult,
+  type ScoringCriterion,
   INTERVIEW_RESULTS,
   INTERVIEW_RESULT_LABELS,
   QUESTION_TYPE_LABELS,
@@ -20,8 +24,16 @@ export const Route = createFileRoute('/interviews/$id/conduct')({
     }
     return { user: context.user }
   },
-  loader: async ({ params }): Promise<ConductInterviewResponse> => {
-    return await getConductInterview({ data: { interviewId: params.id } })
+  loader: async ({ params }): Promise<ConductInterviewResponse & { criteria: ScoringCriterion[]; maxTotalScore: number }> => {
+    const [interviewData, scoringData] = await Promise.all([
+      getConductInterview({ data: { interviewId: params.id } }),
+      getScoringCriteria({}),
+    ])
+    return {
+      ...interviewData,
+      criteria: scoringData.criteria,
+      maxTotalScore: scoringData.maxTotalScore,
+    }
   },
 })
 
@@ -40,19 +52,38 @@ interface FormData {
 }
 
 function ConductInterviewComponent() {
-  const initialData = Route.useLoaderData() as ConductInterviewResponse
+  const initialData = Route.useLoaderData() as ConductInterviewResponse & { criteria: ScoringCriterion[]; maxTotalScore: number }
   const { user } = Route.useRouteContext() as { user: { id: string; name: string; email: string | null; partnerType: string } }
   
   const [session] = React.useState(initialData.session)
   const [questions] = React.useState(initialData.questions)
+  const [criteria] = React.useState(initialData.criteria)
+  const [maxTotalScore] = React.useState(initialData.maxTotalScore)
   const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0)
   const [responses, setResponses] = React.useState<ResponseData[]>([])
+  const [scores, setScores] = React.useState<Record<string, { score: string; comment: string }>>({})
   const [result, setResult] = React.useState<InterviewResult | ''>('')
   const [totalScore, setTotalScore] = React.useState<string>('')
   const [notes, setNotes] = React.useState(session.notes || '')
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [success, setSuccess] = React.useState(false)
+
+  // Calculate total score and suggest result based on scores
+  React.useEffect(() => {
+    const calculatedTotal = Object.values(scores).reduce((sum, s) => {
+      const scoreValue = parseFloat(s.score) || 0
+      return sum + scoreValue
+    }, 0)
+    
+    setTotalScore(calculatedTotal.toFixed(2))
+    
+    // Auto-suggest result based on calculated score
+    if (maxTotalScore > 0 && !result) {
+      const suggestedResult = calculateInterviewResult(calculatedTotal, maxTotalScore)
+      // Don't auto-set, just keep it available
+    }
+  }, [scores, maxTotalScore])
 
   // Initialize responses array based on questions
   React.useEffect(() => {
@@ -87,6 +118,53 @@ function ConductInterviewComponent() {
       return newResponses
     })
     if (error) setError(null)
+  }
+
+  const handleScoreChange = (criterionId: string, field: 'score' | 'comment', value: string) => {
+    setScores(prev => ({
+      ...prev,
+      [criterionId]: {
+        ...prev[criterionId],
+        [field]: value,
+      },
+    }))
+    if (error) setError(null)
+  }
+
+  const handleSaveScores = async () => {
+    if (criteria.length === 0) return
+
+    setIsSubmitting(true)
+    setError(null)
+
+    try {
+      const scoresToSave = Object.entries(scores).map(([criterionId, data]) => ({
+        criterion_id: criterionId,
+        score: parseFloat(data.score) || 0,
+        comment: data.comment || undefined,
+      }))
+
+      if (scoresToSave.length === 0) {
+        setIsSubmitting(false)
+        return
+      }
+
+      const result = await saveInterviewScore({
+        data: {
+          interviewId: session.id,
+          scores: scoresToSave,
+        },
+      })
+
+      if (!result.success) {
+        setError(result.error || 'Gagal menyimpan penilaian')
+      }
+    } catch (err) {
+      console.error('Error saving scores:', err)
+      setError('Terjadi kesalahan saat menyimpan penilaian')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleSaveResponses = async () => {
@@ -144,6 +222,29 @@ function ConductInterviewComponent() {
       if (!saveResult.success) {
         setError(saveResult.error || 'Gagal menyimpan jawaban')
         return
+      }
+
+      // Save scoring criteria
+      if (criteria.length > 0) {
+        const scoresToSave = Object.entries(scores).map(([criterionId, data]) => ({
+          criterion_id: criterionId,
+          score: parseFloat(data.score) || 0,
+          comment: data.comment || undefined,
+        }))
+
+        if (scoresToSave.length > 0) {
+          const scoreResult = await saveInterviewScore({
+            data: {
+              interviewId: session.id,
+              scores: scoresToSave,
+            },
+          })
+
+          if (!scoreResult.success) {
+            setError(scoreResult.error || 'Gagal menyimpan penilaian')
+            return
+          }
+        }
       }
 
       // Complete the interview
@@ -786,6 +887,87 @@ function ConductInterviewComponent() {
           {/* Final Section */}
           <div id="final-section" style={finalSectionStyle}>
             <h2 style={finalSectionTitleStyle}>Penilaian Akhir</h2>
+
+            {/* Scoring Criteria Section */}
+            {criteria.length > 0 && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1rem' }}>
+                  Kriteria Penilaian
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {criteria.map((criterion) => (
+                    <div key={criterion.id} style={{ padding: '1rem', border: '1px solid #e5e7eb', borderRadius: '0.5rem' }}>
+                      <div style={{ marginBottom: '0.75rem' }}>
+                        <div style={{ fontWeight: 600, color: '#111827', marginBottom: '0.25rem' }}>
+                          {criterion.name}
+                        </div>
+                        {criterion.description && (
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                            {criterion.description}
+                          </div>
+                        )}
+                        <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem' }}>
+                          Skor Maksimal: {criterion.max_score}
+                        </div>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', alignItems: 'start' }}>
+                        <div>
+                          <label htmlFor={`score_${criterion.id}`} style={{ ...labelStyle, marginBottom: '0.25rem' }}>
+                            Skor
+                          </label>
+                          <input
+                            type="number"
+                            id={`score_${criterion.id}`}
+                            value={scores[criterion.id]?.score || ''}
+                            onChange={(e) => handleScoreChange(criterion.id, 'score', e.target.value)}
+                            style={inputStyle}
+                            placeholder="0"
+                            step="0.01"
+                            min="0"
+                            max={criterion.max_score}
+                            disabled={isSubmitting || success}
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor={`comment_${criterion.id}`} style={{ ...labelStyle, marginBottom: '0.25rem' }}>
+                            Komentar
+                          </label>
+                          <input
+                            type="text"
+                            id={`comment_${criterion.id}`}
+                            value={scores[criterion.id]?.comment || ''}
+                            onChange={(e) => handleScoreChange(criterion.id, 'comment', e.target.value)}
+                            style={inputStyle}
+                            placeholder="Catatan untuk kriteria ini"
+                            disabled={isSubmitting || success}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Score Summary */}
+                <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '0.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontWeight: 600, color: '#374151' }}>Total Skor</div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#2563eb' }}>
+                      {totalScore || '0'} / {maxTotalScore}
+                    </div>
+                  </div>
+                  {totalScore && maxTotalScore > 0 && (
+                    <div style={{ marginTop: '0.5rem', textAlign: 'right', fontSize: '0.875rem', color: '#6b7280' }}>
+                      {((parseFloat(totalScore) / maxTotalScore) * 100).toFixed(1)}% dari skor maksimal
+                    </div>
+                  )}
+                  {totalScore && maxTotalScore > 0 && !result && (
+                    <div style={{ marginTop: '0.5rem', textAlign: 'right', fontSize: '0.875rem', color: '#16a34a', fontWeight: 500 }}>
+                      Hasil yang disarankan: {INTERVIEW_RESULT_LABELS[calculateInterviewResult(parseFloat(totalScore), maxTotalScore)]}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div style={formGroupStyle}>
               <label htmlFor="result" style={labelStyle}>Hasil Wawancara</label>

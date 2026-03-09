@@ -503,6 +503,68 @@ export interface CompleteInterviewResult {
 }
 
 /**
+ * Scoring criterion for interviews
+ */
+export interface ScoringCriterion {
+  id: string
+  context: string
+  code: string
+  name: string
+  max_score: number
+  weight: number
+  description: string | null
+}
+
+/**
+ * Response for getting scoring criteria
+ */
+export interface ScoringCriteriaResponse {
+  criteria: ScoringCriterion[]
+  maxTotalScore: number
+}
+
+/**
+ * Input for saving a score entry
+ */
+export interface SaveScoreInput {
+  criterion_id: string
+  score: number
+  comment?: string
+}
+
+/**
+ * Result for saving a score
+ */
+export interface SaveScoreResult {
+  success: boolean
+  error?: string
+}
+
+/**
+ * Interview score entry with criterion info
+ */
+export interface ScoreEntryWithCriterion {
+  id: string
+  criterion_id: string
+  criterion_name: string
+  criterion_code: string
+  max_score: number
+  score: number
+  comment: string | null
+}
+
+/**
+ * Response for getting interview scores
+ */
+export interface InterviewScoresResponse {
+  entries: ScoreEntryWithCriterion[]
+  totalScore: number
+  maxTotalScore: number
+  percentage: number
+  suggestedResult: InterviewResult | null
+}
+
+/**
  * Get interview session and questions for conducting
  */
 export const getConductInterview = createServerFn({ method: 'GET' })
@@ -733,5 +795,180 @@ export const completeInterview = createServerFn({ method: 'POST' })
     } catch (error) {
       console.error('Error completing interview:', error)
       return { success: false, error: 'Failed to complete interview' }
+    }
+  })
+
+/**
+ * Get scoring criteria for interview context
+ */
+export const getScoringCriteria = createServerFn({ method: 'GET' })
+  .handler(async (): Promise<ScoringCriteriaResponse> => {
+    const criteria = await prisma.scoring_criteria.findMany({
+      where: {
+        context: 'interview',
+      },
+      orderBy: {
+        code: 'asc',
+      },
+    })
+
+    const maxTotalScore = criteria.reduce((sum, c) => sum + Number(c.max_score), 0)
+
+    return {
+      criteria: criteria.map(c => ({
+        id: c.id,
+        context: c.context,
+        code: c.code,
+        name: c.name,
+        max_score: Number(c.max_score),
+        weight: Number(c.weight),
+        description: c.description,
+      })),
+      maxTotalScore,
+    }
+  })
+
+/**
+ * Save a score entry for an interview
+ */
+export const saveInterviewScore = createServerFn({ method: 'POST' })
+  .inputValidator((data: unknown): { interviewId: string; scores: SaveScoreInput[] } => {
+    if (typeof data !== 'object' || data === null) {
+      throw new Error('Invalid input')
+    }
+    const { interviewId, scores } = data as Record<string, unknown>
+    if (typeof interviewId !== 'string' || !interviewId) {
+      throw new Error('Interview ID is required')
+    }
+    if (!Array.isArray(scores)) {
+      throw new Error('Scores must be an array')
+    }
+    return { interviewId, scores: scores as SaveScoreInput[] }
+  })
+  .handler(async ({ data }): Promise<SaveScoreResult> => {
+    const { interviewId, scores } = data
+
+    try {
+      // Verify interview exists
+      const session = await prisma.interview_sessions.findUnique({
+        where: { id: interviewId },
+        select: { id: true, submission_code: true },
+      })
+
+      if (!session) {
+        return { success: false, error: 'Interview session not found' }
+      }
+
+      if (session.submission_code) {
+        return { success: false, error: 'Interview already completed' }
+      }
+
+      // Save or update score entries
+      for (const scoreEntry of scores) {
+        await prisma.interview_score_entries.upsert({
+          where: {
+            interview_session_id_criterion_id: {
+              interview_session_id: interviewId,
+              criterion_id: scoreEntry.criterion_id,
+            },
+          },
+          update: {
+            score: scoreEntry.score,
+            comment: scoreEntry.comment || null,
+          },
+          create: {
+            interview_session_id: interviewId,
+            criterion_id: scoreEntry.criterion_id,
+            score: scoreEntry.score,
+            comment: scoreEntry.comment || null,
+          },
+        })
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('Error saving interview scores:', error)
+      return { success: false, error: 'Failed to save scores' }
+    }
+  })
+
+/**
+ * Calculate interview result based on total score
+ */
+export function calculateInterviewResult(
+  totalScore: number,
+  maxScore: number
+): InterviewResult {
+  if (maxScore === 0) return 'not_ready'
+  
+  const percentage = (totalScore / maxScore) * 100
+  
+  // Score-to-result mapping
+  if (percentage >= 90) return 'priority_deploy'
+  if (percentage >= 80) return 'talent_pool'
+  if (percentage >= 70) return 'deployable_penyelia_halal'
+  if (percentage >= 60) return 'training_first'
+  if (percentage >= 50) return 'training_required'
+  return 'not_ready'
+}
+
+/**
+ * Get interview scores with breakdown
+ */
+export const getInterviewScores = createServerFn({ method: 'GET' })
+  .inputValidator((data: unknown): { interviewId: string } => {
+    if (typeof data !== 'object' || data === null) {
+      throw new Error('Invalid input')
+    }
+    const { interviewId } = data as Record<string, unknown>
+    if (typeof interviewId !== 'string' || !interviewId) {
+      throw new Error('Interview ID is required')
+    }
+    return { interviewId }
+  })
+  .handler(async ({ data }): Promise<InterviewScoresResponse> => {
+    const { interviewId } = data
+
+    // Get score entries with criterion info
+    const entries = await prisma.interview_score_entries.findMany({
+      where: {
+        interview_session_id: interviewId,
+      },
+      include: {
+        scoring_criteria: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            max_score: true,
+          },
+        },
+      },
+    })
+
+    const totalScore = entries.reduce((sum, e) => sum + Number(e.score), 0)
+    const maxTotalScore = entries.reduce((sum, e) => sum + Number(e.scoring_criteria.max_score), 0)
+    const percentage = maxTotalScore > 0 ? (totalScore / maxTotalScore) * 100 : 0
+
+    // Get the interview session to check if it's completed
+    const session = await prisma.interview_sessions.findUnique({
+      where: { id: interviewId },
+      select: { result: true },
+    })
+
+    return {
+      entries: entries.map(e => ({
+        id: e.id,
+        criterion_id: e.criterion_id,
+        criterion_name: e.scoring_criteria.name,
+        criterion_code: e.scoring_criteria.code,
+        max_score: Number(e.scoring_criteria.max_score),
+        score: Number(e.score),
+        comment: e.comment,
+      })),
+      totalScore,
+      maxTotalScore,
+      percentage,
+      suggestedResult: session?.result || calculateInterviewResult(totalScore, maxTotalScore),
     }
   })

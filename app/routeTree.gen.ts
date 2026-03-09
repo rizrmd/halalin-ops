@@ -10,6 +10,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AssessmentsRouteImport } from './routes/assessments'
 import { Route as InterviewsRouteImport } from './routes/interviews'
+import { Route as InterviewsIdRouteImport } from './routes/interviews.$id'
 import { Route as InterviewsNewRouteImport } from './routes/interviews.new'
 import { Route as InterviewsIdConductRouteImport } from './routes/interviews.$id.conduct'
 import { Route as LoginRouteImport } from './routes/login'
@@ -39,6 +40,12 @@ const InterviewsRoute = InterviewsRouteImport.update({
 const InterviewsNewRoute = InterviewsNewRouteImport.update({
   id: '/interviews/new',
   path: '/new',
+  getParentRoute: () => InterviewsRoute,
+} as any)
+
+const InterviewsIdRoute = InterviewsIdRouteImport.update({
+  id: '/interviews/$id',
+  path: '/$id',
   getParentRoute: () => InterviewsRoute,
 } as any)
 
@@ -83,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/assessments': typeof AssessmentsRoute
   '/interviews': typeof InterviewsRoute
+  '/interviews/$id': typeof InterviewsIdRoute
   '/interviews/new': typeof InterviewsNewRoute
   '/interviews/$id/conduct': typeof InterviewsIdConductRoute
   '/login': typeof LoginRoute
@@ -96,6 +104,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/assessments': typeof AssessmentsRoute
   '/interviews': typeof InterviewsRoute
+  '/interviews/$id': typeof InterviewsIdRoute
   '/interviews/new': typeof InterviewsNewRoute
   '/interviews/$id/conduct': typeof InterviewsIdConductRoute
   '/login': typeof LoginRoute
@@ -110,6 +119,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/assessments': typeof AssessmentsRoute
   '/interviews': typeof InterviewsRoute
+  '/interviews/$id': typeof InterviewsIdRoute
   '/interviews/new': typeof InterviewsNewRoute
   '/interviews/$id/conduct': typeof InterviewsIdConductRoute
   '/login': typeof LoginRoute
@@ -120,10 +130,10 @@ export interface FileRoutesById {
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/assessments' | '/interviews' | '/interviews/new' | '/interviews/$id/conduct' | '/login' | '/partners' | '/partners/$id' | '/partners/new'
+  fullPaths: '/' | '/about' | '/assessments' | '/interviews' | '/interviews/$id' | '/interviews/new' | '/interviews/$id/conduct' | '/login' | '/partners' | '/partners/$id' | '/partners/new'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/assessments' | '/interviews' | '/interviews/new' | '/interviews/$id/conduct' | '/login' | '/partners' | '/partners/$id' | '/partners/new'
-  id: '__root__' | '/' | '/about' | '/assessments' | '/interviews' | '/interviews/new' | '/interviews/$id/conduct' | '/login' | '/partners' | '/partners/$id' | '/partners/new'
+  to: '/' | '/about' | '/assessments' | '/interviews' | '/interviews/$id' | '/interviews/new' | '/interviews/$id/conduct' | '/login' | '/partners' | '/partners/$id' | '/partners/new'
+  id: '__root__' | '/' | '/about' | '/assessments' | '/interviews' | '/interviews/$id' | '/interviews/new' | '/interviews/$id/conduct' | '/login' | '/partners' | '/partners/$id' | '/partners/new'
   fileRoutesById: FileRoutesById
 }
 
@@ -132,6 +142,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AssessmentsRoute: typeof AssessmentsRoute
   InterviewsRoute: typeof InterviewsRoute
+  InterviewsIdRoute: typeof InterviewsIdRoute
   InterviewsNewRoute: typeof InterviewsNewRoute
   InterviewsIdConductRoute: typeof InterviewsIdConductRoute
   LoginRoute: typeof LoginRoute
@@ -169,6 +180,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/interviews'
       preLoaderRoute: typeof InterviewsRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/interviews/$id': {
+      id: '/interviews/$id'
+      path: '/$id'
+      fullPath: '/interviews/$id'
+      preLoaderRoute: typeof InterviewsIdRouteImport
+      parentRoute: typeof InterviewsRoute
     }
     '/interviews/new': {
       id: '/interviews/new'
@@ -220,6 +238,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AssessmentsRoute: AssessmentsRoute,
   InterviewsRoute: InterviewsRoute,
+  InterviewsIdRoute: InterviewsIdRoute,
   InterviewsNewRoute: InterviewsNewRoute,
   InterviewsIdConductRoute: InterviewsIdConductRoute,
   LoginRoute: LoginRoute,

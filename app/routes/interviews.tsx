@@ -305,21 +305,45 @@ function InterviewsComponent() {
                         </span>
                       </td>
                       <td style={actionCellStyle}>
-                        <a
-                          href={`/interviews/${interview.id}/conduct`}
-                          style={{
-                            ...conductButtonStyle,
-                            ...(isCompleted ? { backgroundColor: '#9ca3af', borderColor: '#9ca3af', cursor: 'not-allowed' } : {}),
-                          }}
-                          onClick={(e) => {
-                            if (isCompleted) {
-                              e.preventDefault()
-                              alert('Wawancara ini sudah diselesaikan')
-                            }
-                          }}
-                        >
-                          {isCompleted ? 'Selesai' : 'Lakukan'}
-                        </a>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
+                          {isCompleted && (
+                            <a
+                              href={`/interviews/${interview.id}`}
+                              style={{
+                                padding: '0.375rem 0.75rem',
+                                backgroundColor: '#2563eb',
+                                color: 'white',
+                                border: '1px solid #2563eb',
+                                borderRadius: '0.375rem',
+                                fontSize: '0.75rem',
+                                fontWeight: 500,
+                                cursor: 'pointer',
+                                minHeight: '36px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.25rem',
+                                textDecoration: 'none',
+                              }}
+                            >
+                              Lihat
+                            </a>
+                          )}
+                          <a
+                            href={`/interviews/${interview.id}/conduct`}
+                            style={{
+                              ...conductButtonStyle,
+                              ...(isCompleted ? { backgroundColor: '#9ca3af', borderColor: '#9ca3af', cursor: 'not-allowed' } : {}),
+                            }}
+                            onClick={(e) => {
+                              if (isCompleted) {
+                                e.preventDefault()
+                                alert('Wawancara ini sudah diselesaikan')
+                              }
+                            }}
+                          >
+                            {isCompleted ? 'Selesai' : 'Lakukan'}
+                          </a>
+                        </div>
                       </td>
                     </tr>
                   )
