@@ -2,8 +2,11 @@ import http from 'node:http'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { createServerEntry } from './dist/server/ssr.js'
+import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
 const CLIENT_DIR = join(process.cwd(), 'dist', 'client')
+const prisma = new PrismaClient()
 
 const serverEntry = createServerEntry({
   fetch: async (request) => {
@@ -37,6 +40,40 @@ function getMimeType(filePath) {
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`)
+  
+  // Debug endpoint to check admin user
+  if (url.pathname === '/api/debug/admin') {
+    try {
+      const admin = await prisma.partners.findFirst({
+        where: { email: 'admin@halalin.co.id' },
+      })
+      
+      if (!admin) {
+        res.statusCode = 404
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ error: 'Admin not found' }))
+        return
+      }
+      
+      const passwordValid = admin.password_hash ? await bcrypt.compare('admin123', admin.password_hash) : false
+      
+      res.statusCode = 200
+      res.setHeader('Content-Type', 'application/json')
+      res.end(JSON.stringify({
+        id: admin.id,
+        email: admin.email,
+        name: admin.full_name,
+        hasPasswordHash: !!admin.password_hash,
+        passwordValid,
+      }))
+      return
+    } catch (error) {
+      res.statusCode = 500
+      res.setHeader('Content-Type', 'application/json')
+      res.end(JSON.stringify({ error: error.message }))
+      return
+    }
+  }
   
   // Health check endpoint - no auth or database required
   if (url.pathname === '/health' || url.pathname === '/api/health') {
