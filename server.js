@@ -9,8 +9,17 @@ const serverEntry = createServerEntry({
 })
 
 const server = http.createServer(async (req, res) => {
+  const url = new URL(req.url, `http://${req.headers.host}`)
+  
+  // Health check endpoint - no auth or database required
+  if (url.pathname === '/health' || url.pathname === '/api/health') {
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'application/json')
+    res.end(JSON.stringify({ status: 'ok', timestamp: new Date().toISOString() }))
+    return
+  }
+  
   try {
-    const url = new URL(req.url, `http://${req.headers.host}`)
     const request = new Request(url, {
       method: req.method,
       headers: req.headers,

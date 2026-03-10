@@ -82,8 +82,8 @@ EXPOSE 3000
 ENV PORT=3000
 
 # Health check to ensure server is running
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD curl -fs http://localhost:${PORT}/ || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:${PORT}/health || exit 1
 
 # Use entrypoint script for proper signal handling
 ENTRYPOINT ["docker-entrypoint.sh"]
