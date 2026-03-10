@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
 import { getAuthUser } from '../server/auth'
 
@@ -11,7 +11,6 @@ interface RequireAuthProps {
  * Uses loader data for SSR compatibility
  */
 export function RequireAuth({ children }: RequireAuthProps) {
-  const location = useLocation()
   const navigate = useNavigate()
   const [authState, setAuthState] = React.useState<{
     user: { id: string, name: string, email: string | null, partnerType: string } | null
@@ -34,7 +33,7 @@ export function RequireAuth({ children }: RequireAuthProps) {
           }
         }
       }
-      catch (error) {
+      catch {
         if (!cancelled) {
           setAuthState({ user: null, loading: false })
         }

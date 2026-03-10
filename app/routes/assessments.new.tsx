@@ -1,5 +1,5 @@
 import type { AssessmentFormOptionsResponse, ValidationError } from '../server/assessments'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
 import {
 
@@ -32,9 +32,10 @@ const initialFormData: FormData = {
 }
 
 function CreateAssessmentComponent() {
+  const navigate = useNavigate()
   const initialData = Route.useLoaderData() as AssessmentFormOptionsResponse
   const [formData, setFormData] = React.useState<FormData>(initialFormData)
-  const [options, setOptions] = React.useState<AssessmentFormOptionsResponse>(initialData)
+  const [options] = React.useState<AssessmentFormOptionsResponse>(initialData)
   const [errors, setErrors] = React.useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [submitError, setSubmitError] = React.useState<string | null>(null)
@@ -87,7 +88,7 @@ function CreateAssessmentComponent() {
         setFormData(initialFormData)
         // Redirect to assessment take page
         setTimeout(() => {
-          window.location.href = `/assessments/${result.assessmentId}/take`
+          navigate({ to: `/assessments/${result.assessmentId}/take` as never })
         }, 1500)
       }
       else if (result.errors) {
@@ -108,7 +109,7 @@ function CreateAssessmentComponent() {
   }
 
   const handleCancel = () => {
-    window.location.href = '/assessments'
+    navigate({ to: '/assessments' as never })
   }
 
   // Styles

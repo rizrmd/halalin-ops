@@ -1,5 +1,8 @@
+import type { Prisma } from '@prisma/client'
 import { createServerFn } from '@tanstack/react-start'
+import { requireAdmin } from './auth'
 import { prisma } from './db'
+import { hashPassword } from './password'
 
 // Partner type enum values from schema.prisma
 export const PARTNER_TYPES = [
@@ -23,6 +26,8 @@ export const PARTNER_TYPE_LABELS: Record<PartnerType, string> = {
   interviewer: 'Pewawancara',
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/
+
 // Type for partner response
 export interface PartnerListItem {
   id: string
@@ -36,6 +41,7 @@ export interface PartnerListItem {
 export interface CreatePartnerInput {
   full_name: string
   email?: string
+  initial_password?: string
   phone?: string
   partner_type: PartnerType
   domicile_city?: string
@@ -66,30 +72,70 @@ export interface PartnersResponse {
   pageSize: number
 }
 
+export interface GetPartnersInput {
+  page: number
+  pageSize: number
+  q: string
+  partnerType: PartnerType | 'all'
+  isActive: 'all' | 'active' | 'inactive'
+}
+
 /**
  * Get partners list with pagination
  * @param page - Current page number (1-based)
  * @param pageSize - Number of items per page
  */
 export const getPartners = createServerFn({ method: 'GET' })
-  .inputValidator((data: unknown): { page: number, pageSize: number } => {
+  .inputValidator((data: unknown): GetPartnersInput => {
     if (typeof data !== 'object' || data === null) {
-      return { page: 1, pageSize: 20 }
+      return { page: 1, pageSize: 20, q: '', partnerType: 'all', isActive: 'all' }
     }
-    const { page, pageSize } = data as Record<string, unknown>
+    const { page, pageSize, q, partnerType, isActive } = data as Record<string, unknown>
     const validatedPage = typeof page === 'number' && page > 0 ? page : 1
     const validatedPageSize = typeof pageSize === 'number' && pageSize > 0 && pageSize <= 100 ? pageSize : 20
-    return { page: validatedPage, pageSize: validatedPageSize }
+    const validatedQuery = typeof q === 'string' ? q.trim() : ''
+    const validatedPartnerType = typeof partnerType === 'string' && PARTNER_TYPES.includes(partnerType as PartnerType)
+      ? partnerType as PartnerType
+      : 'all'
+    const validatedIsActive = isActive === 'active' || isActive === 'inactive' ? isActive : 'all'
+    return {
+      page: validatedPage,
+      pageSize: validatedPageSize,
+      q: validatedQuery,
+      partnerType: validatedPartnerType,
+      isActive: validatedIsActive,
+    }
   })
   .handler(async ({ data }): Promise<PartnersResponse> => {
-    const { page, pageSize } = data
-    const skip = (page - 1) * pageSize
+    const { page, pageSize, q, partnerType, isActive } = data
+    const where: Prisma.partnersWhereInput = {}
 
-    // Get total count for pagination
-    const totalCount = await prisma.partners.count()
+    if (q) {
+      where.OR = [
+        { full_name: { contains: q, mode: 'insensitive' } },
+        { email: { contains: q, mode: 'insensitive' } },
+        { phone: { contains: q, mode: 'insensitive' } },
+      ]
+    }
 
-    // Get paginated partners
+    if (partnerType !== 'all') {
+      where.partner_type = partnerType
+    }
+
+    if (isActive === 'active') {
+      where.is_active = true
+    }
+    else if (isActive === 'inactive') {
+      where.is_active = false
+    }
+
+    const totalCount = await prisma.partners.count({ where })
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
+    const currentPage = Math.min(page, totalPages)
+    const skip = (currentPage - 1) * pageSize
+
     const partners = await prisma.partners.findMany({
+      where,
       select: {
         id: true,
         full_name: true,
@@ -104,9 +150,7 @@ export const getPartners = createServerFn({ method: 'GET' })
       take: pageSize,
     })
 
-    const totalPages = Math.ceil(totalCount / pageSize)
-
-    return { partners, totalCount, totalPages, currentPage: page, pageSize }
+    return { partners, totalCount, totalPages, currentPage, pageSize }
   })
 
 /**
@@ -178,9 +222,18 @@ export const createPartner = createServerFn({ method: 'POST' })
     // Validate optional fields format
     const email = input.email
     if (email && typeof email === 'string' && email.trim() !== '') {
-      const emailRegex = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/
-      if (!emailRegex.test(email)) {
+      if (!EMAIL_REGEX.test(email)) {
         errors.push({ field: 'email', message: 'Format email tidak valid' })
+      }
+    }
+
+    const initialPassword = input.initial_password
+    if (email && typeof email === 'string' && email.trim() !== '') {
+      if (!initialPassword || typeof initialPassword !== 'string' || initialPassword.trim() === '') {
+        errors.push({ field: 'initial_password', message: 'Kata sandi awal wajib diisi jika email diisi' })
+      }
+      else if (initialPassword.trim().length < 8) {
+        errors.push({ field: 'initial_password', message: 'Kata sandi awal minimal 8 karakter' })
       }
     }
 
@@ -196,6 +249,9 @@ export const createPartner = createServerFn({ method: 'POST' })
     return {
       full_name: (full_name as string).trim(),
       email: email && typeof email === 'string' ? email.trim() || undefined : undefined,
+      initial_password: input.initial_password && typeof input.initial_password === 'string'
+        ? input.initial_password.trim() || undefined
+        : undefined,
       phone: phone && typeof phone === 'string' ? phone.trim() || undefined : undefined,
       partner_type: partner_type as PartnerType,
       domicile_city: input.domicile_city && typeof input.domicile_city === 'string'
@@ -215,10 +271,17 @@ export const createPartner = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }): Promise<CreatePartnerResult> => {
     try {
+      await requireAdmin()
+
+      const passwordHash = data.initial_password
+        ? await hashPassword(data.initial_password)
+        : null
+
       const partner = await prisma.partners.create({
         data: {
           full_name: data.full_name,
           email: data.email || null,
+          password_hash: passwordHash,
           phone: data.phone || null,
           partner_type: data.partner_type,
           domicile_city: data.domicile_city || null,

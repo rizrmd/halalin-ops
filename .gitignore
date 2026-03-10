@@ -31,4 +31,7 @@ coverage/
 
 # Nitro
 .nitro/
+.output/
+.tanstack/
+cookies.txt
 .env

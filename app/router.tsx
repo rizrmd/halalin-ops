@@ -46,5 +46,9 @@ export function createAppRouter() {
   return router
 }
 
+export function getRouter() {
+  return createAppRouter()
+}
+
 // For type-safe router
 export type AppRouter = ReturnType<typeof createAppRouter>

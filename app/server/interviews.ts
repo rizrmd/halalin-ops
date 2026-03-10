@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client'
 import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db'
 
@@ -61,6 +62,14 @@ export interface InterviewsResponse {
   pageSize: number
 }
 
+export interface GetInterviewsInput {
+  page: number
+  pageSize: number
+  q: string
+  interviewMode: InterviewMode | 'all'
+  result: InterviewResult | 'pending' | 'all'
+}
+
 // Type for creating an interview
 export interface CreateInterviewInput {
   candidate_id: string
@@ -122,24 +131,57 @@ export interface FormOptionsResponse {
  * @param pageSize - Number of items per page
  */
 export const getInterviews = createServerFn({ method: 'GET' })
-  .inputValidator((data: unknown): { page: number, pageSize: number } => {
+  .inputValidator((data: unknown): GetInterviewsInput => {
     if (typeof data !== 'object' || data === null) {
-      return { page: 1, pageSize: 20 }
+      return { page: 1, pageSize: 20, q: '', interviewMode: 'all', result: 'all' }
     }
-    const { page, pageSize } = data as Record<string, unknown>
+    const { page, pageSize, q, interviewMode, result } = data as Record<string, unknown>
     const validatedPage = typeof page === 'number' && page > 0 ? page : 1
     const validatedPageSize = typeof pageSize === 'number' && pageSize > 0 && pageSize <= 100 ? pageSize : 20
-    return { page: validatedPage, pageSize: validatedPageSize }
+    const validatedQuery = typeof q === 'string' ? q.trim() : ''
+    const validatedMode = typeof interviewMode === 'string' && INTERVIEW_MODES.includes(interviewMode as InterviewMode)
+      ? interviewMode as InterviewMode
+      : 'all'
+    const validatedResult = result === 'pending'
+      || (typeof result === 'string' && INTERVIEW_RESULTS.includes(result as InterviewResult))
+      ? result as InterviewResult | 'pending'
+      : 'all'
+    return {
+      page: validatedPage,
+      pageSize: validatedPageSize,
+      q: validatedQuery,
+      interviewMode: validatedMode,
+      result: validatedResult,
+    }
   })
   .handler(async ({ data }): Promise<InterviewsResponse> => {
-    const { page, pageSize } = data
-    const skip = (page - 1) * pageSize
+    const { page, pageSize, q, interviewMode, result } = data
+    const where: Prisma.interview_sessionsWhereInput = {}
 
-    // Get total count for pagination
-    const totalCount = await prisma.interview_sessions.count()
+    if (q) {
+      where.partners_interview_sessions_candidate_idTopartners = {
+        full_name: { contains: q, mode: 'insensitive' },
+      }
+    }
 
-    // Get paginated interview sessions with candidate info
+    if (interviewMode !== 'all') {
+      where.interview_mode = interviewMode
+    }
+
+    if (result === 'pending') {
+      where.result = null
+    }
+    else if (result !== 'all') {
+      where.result = result
+    }
+
+    const totalCount = await prisma.interview_sessions.count({ where })
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
+    const currentPage = Math.min(page, totalPages)
+    const skip = (currentPage - 1) * pageSize
+
     const interviews = await prisma.interview_sessions.findMany({
+      where,
       select: {
         id: true,
         candidate_id: true,
@@ -159,9 +201,6 @@ export const getInterviews = createServerFn({ method: 'GET' })
       take: pageSize,
     })
 
-    const totalPages = Math.ceil(totalCount / pageSize)
-
-    // Transform to interview list items
     const interviewListItems: InterviewListItem[] = interviews.map(session => ({
       id: session.id,
       candidate_name: session.partners_interview_sessions_candidate_idTopartners.full_name,
@@ -175,7 +214,7 @@ export const getInterviews = createServerFn({ method: 'GET' })
       interviews: interviewListItems,
       totalCount,
       totalPages,
-      currentPage: page,
+      currentPage,
       pageSize,
     }
   })

@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client'
 import { randomBytes } from 'node:crypto'
 import { Decimal } from '@prisma/client/runtime/library'
 import { createServerFn } from '@tanstack/react-start'
@@ -31,6 +32,7 @@ export const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
 // Type for assessment list item
 export interface AssessmentListItem {
   id: string
+  participant_id: string
   participant_name: string
   participant_email: string | null
   template_title: string
@@ -88,6 +90,27 @@ export interface AssessmentsResponse {
   pageSize: number
 }
 
+export const COMPETENCY_RESULTS = [
+  'priority_deploy',
+  'talent_pool',
+  'training_first',
+  'hold',
+  'senior_halal_compliance',
+  'deployable_penyelia_halal',
+  'training_required',
+  'not_ready',
+] as const
+
+export type CompetencyResult = typeof COMPETENCY_RESULTS[number]
+
+export interface GetAssessmentsInput {
+  page: number
+  pageSize: number
+  q: string
+  status: AssessmentListItem['status'] | 'all'
+  competencyResult: CompetencyResult | 'pending' | 'all'
+}
+
 // Display names for competency results (Indonesian)
 export const COMPETENCY_RESULT_LABELS: Record<string, string> = {
   priority_deploy: 'Prioritas Penempatan',
@@ -108,28 +131,94 @@ export const ASSESSMENT_STATUS_LABELS: Record<string, string> = {
   reviewed: 'Sudah Direview',
 }
 
+const ASSESSMENT_STATUSES: AssessmentListItem['status'][] = ['not_started', 'in_progress', 'submitted', 'reviewed']
+
 /**
  * Get assessments list with pagination
  */
 export const getAssessments = createServerFn({ method: 'GET' })
-  .inputValidator((data: unknown): { page: number, pageSize: number } => {
+  .inputValidator((data: unknown): GetAssessmentsInput => {
     if (typeof data !== 'object' || data === null) {
-      return { page: 1, pageSize: 20 }
+      return { page: 1, pageSize: 20, q: '', status: 'all', competencyResult: 'all' }
     }
-    const { page, pageSize } = data as Record<string, unknown>
+    const { page, pageSize, q, status, competencyResult } = data as Record<string, unknown>
     const validatedPage = typeof page === 'number' && page > 0 ? page : 1
     const validatedPageSize = typeof pageSize === 'number' && pageSize > 0 && pageSize <= 100 ? pageSize : 20
-    return { page: validatedPage, pageSize: validatedPageSize }
+    const validatedQuery = typeof q === 'string' ? q.trim() : ''
+    const validatedStatus = typeof status === 'string' && ASSESSMENT_STATUSES.includes(status as AssessmentListItem['status'])
+      ? status as AssessmentListItem['status']
+      : 'all'
+    const validatedCompetencyResult = competencyResult === 'pending'
+      || (typeof competencyResult === 'string' && COMPETENCY_RESULTS.includes(competencyResult as CompetencyResult))
+      ? competencyResult as CompetencyResult | 'pending'
+      : 'all'
+    return {
+      page: validatedPage,
+      pageSize: validatedPageSize,
+      q: validatedQuery,
+      status: validatedStatus,
+      competencyResult: validatedCompetencyResult,
+    }
   })
   .handler(async ({ data }): Promise<AssessmentsResponse> => {
-    const { page, pageSize } = data
-    const skip = (page - 1) * pageSize
+    const { page, pageSize, q, status, competencyResult } = data
+    const where: Prisma.assessment_attemptsWhereInput = {}
 
-    // Get total count for pagination
-    const totalCount = await prisma.assessment_attempts.count()
+    if (q) {
+      where.OR = [
+        {
+          partners_assessment_attempts_participant_idTopartners: {
+            full_name: { contains: q, mode: 'insensitive' },
+          },
+        },
+        {
+          partners_assessment_attempts_participant_idTopartners: {
+            email: { contains: q, mode: 'insensitive' },
+          },
+        },
+        {
+          question_banks: {
+            title: { contains: q, mode: 'insensitive' },
+          },
+        },
+        {
+          question_banks: {
+            template_code: { contains: q, mode: 'insensitive' },
+          },
+        },
+      ]
+    }
 
-    // Get paginated assessment attempts with related data
+    if (status === 'not_started') {
+      where.started_at = null
+      where.submitted_at = null
+    }
+    else if (status === 'in_progress') {
+      where.started_at = { not: null }
+      where.submitted_at = null
+    }
+    else if (status === 'submitted') {
+      where.submitted_at = { not: null }
+      where.competency_result = null
+    }
+    else if (status === 'reviewed') {
+      where.competency_result = { not: null }
+    }
+
+    if (competencyResult === 'pending') {
+      where.competency_result = null
+    }
+    else if (competencyResult !== 'all') {
+      where.competency_result = competencyResult
+    }
+
+    const totalCount = await prisma.assessment_attempts.count({ where })
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
+    const currentPage = Math.min(page, totalPages)
+    const skip = (currentPage - 1) * pageSize
+
     const attempts = await prisma.assessment_attempts.findMany({
+      where,
       select: {
         id: true,
         participant_id: true,
@@ -176,6 +265,7 @@ export const getAssessments = createServerFn({ method: 'GET' })
 
       return {
         id: attempt.id,
+        participant_id: attempt.participant_id,
         participant_name: attempt.partners_assessment_attempts_participant_idTopartners.full_name,
         participant_email: attempt.partners_assessment_attempts_participant_idTopartners.email,
         template_title: attempt.question_banks.title,
@@ -190,9 +280,7 @@ export const getAssessments = createServerFn({ method: 'GET' })
       }
     })
 
-    const totalPages = Math.ceil(totalCount / pageSize)
-
-    return { assessments, totalCount, totalPages, currentPage: page, pageSize }
+    return { assessments, totalCount, totalPages, currentPage, pageSize }
   })
 
 /**

@@ -1,5 +1,8 @@
+import process from 'node:process'
 import { deleteCookie, getCookie, setCookie } from '@tanstack/react-start/server'
-import { sign, verify } from 'jsonwebtoken'
+import jsonwebtoken from 'jsonwebtoken'
+
+const { sign, verify } = jsonwebtoken
 
 const SESSION_SECRET = process.env.SESSION_SECRET
 const SESSION_COOKIE_NAME = 'session'

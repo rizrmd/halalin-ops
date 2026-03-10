@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import * as React from 'react'
 import { getPartnerById } from '../server/partners'
 
@@ -31,7 +31,7 @@ export const Route = createFileRoute('/partners/$id')({
       const partner = await getPartnerById({ data: { id: params.id } })
       return partner as PartnerDetail
     }
-    catch (error) {
+    catch {
       // If partner not found, throw 404
       throw new Error('PARTNER_NOT_FOUND')
     }
@@ -296,9 +296,9 @@ function PartnerDetailComponent() {
         <div style={headerRowStyle}>
           <h1 style={titleStyle}>Detail Mitra</h1>
         </div>
-        <a href="/partners" style={backLinkStyle}>
+        <Link to={'/partners' as never} style={backLinkStyle}>
           ← Kembali ke Daftar Mitra
-        </a>
+        </Link>
       </div>
 
       <div style={cardStyle}>

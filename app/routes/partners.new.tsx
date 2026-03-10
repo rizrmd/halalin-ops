@@ -1,5 +1,5 @@
 import type { PartnerType, ValidationError } from '../server/partners'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
 import { createPartner, PARTNER_TYPE_LABELS, PARTNER_TYPES } from '../server/partners'
 
@@ -9,6 +9,9 @@ export const Route = createFileRoute('/partners/new')({
     if (!context.user) {
       throw new Error('UNAUTHORIZED')
     }
+    if (!context.user.isAdmin) {
+      throw new Error('FORBIDDEN')
+    }
     return { user: context.user }
   },
 })
@@ -16,6 +19,7 @@ export const Route = createFileRoute('/partners/new')({
 interface FormData {
   full_name: string
   email: string
+  initial_password: string
   phone: string
   partner_type: PartnerType | ''
   domicile_city: string
@@ -28,6 +32,7 @@ interface FormData {
 const initialFormData: FormData = {
   full_name: '',
   email: '',
+  initial_password: '',
   phone: '',
   partner_type: '',
   domicile_city: '',
@@ -37,7 +42,10 @@ const initialFormData: FormData = {
   notes: '',
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/
+
 function CreatePartnerComponent() {
+  const navigate = useNavigate()
   const [formData, setFormData] = React.useState<FormData>(initialFormData)
   const [errors, setErrors] = React.useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = React.useState(false)
@@ -67,9 +75,14 @@ function CreatePartnerComponent() {
       newErrors.partner_type = 'Tipe mitra wajib dipilih'
     }
     if (formData.email.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/
-      if (!emailRegex.test(formData.email)) {
+      if (!EMAIL_REGEX.test(formData.email)) {
         newErrors.email = 'Format email tidak valid'
+      }
+      if (!formData.initial_password.trim()) {
+        newErrors.initial_password = 'Kata sandi awal wajib diisi jika email diisi'
+      }
+      else if (formData.initial_password.trim().length < 8) {
+        newErrors.initial_password = 'Kata sandi awal minimal 8 karakter'
       }
     }
     if (formData.phone.trim() && formData.phone.length < 8) {
@@ -92,6 +105,7 @@ function CreatePartnerComponent() {
         data: {
           full_name: formData.full_name,
           email: formData.email || undefined,
+          initial_password: formData.initial_password || undefined,
           phone: formData.phone || undefined,
           partner_type: formData.partner_type as PartnerType,
           domicile_city: formData.domicile_city || undefined,
@@ -106,7 +120,7 @@ function CreatePartnerComponent() {
         setSubmitSuccess(true)
         setFormData(initialFormData)
         setTimeout(() => {
-          window.location.href = '/partners'
+          navigate({ to: '/partners' as never })
         }, 1500)
       }
       else if (result.errors) {
@@ -119,7 +133,12 @@ function CreatePartnerComponent() {
     }
     catch (error) {
       console.error('Error creating partner:', error)
-      setSubmitError('Terjadi kesalahan saat menyimpan data. Silakan coba lagi.')
+      if (error instanceof Error && error.message.includes('FORBIDDEN')) {
+        setSubmitError('Hanya admin yang dapat menambahkan mitra baru.')
+      }
+      else {
+        setSubmitError('Terjadi kesalahan saat menyimpan data. Silakan coba lagi.')
+      }
     }
     finally {
       setIsSubmitting(false)
@@ -127,7 +146,7 @@ function CreatePartnerComponent() {
   }
 
   const handleCancel = () => {
-    window.location.href = '/partners'
+    navigate({ to: '/partners' as never })
   }
 
   // Styles
@@ -374,6 +393,21 @@ function CreatePartnerComponent() {
                 disabled={isSubmitting || submitSuccess}
               />
               {errors.email && <span style={errorStyle}>{errors.email}</span>}
+            </div>
+
+            <div style={formGroupStyle}>
+              <label htmlFor="initial_password" style={labelStyle}>Kata Sandi Awal</label>
+              <input
+                type="password"
+                id="initial_password"
+                value={formData.initial_password}
+                onChange={e => handleChange('initial_password', e.target.value)}
+                style={{ ...inputStyle, ...(errors.initial_password ? inputErrorStyle : {}) }}
+                placeholder="Minimal 8 karakter"
+                disabled={isSubmitting || submitSuccess}
+                autoComplete="new-password"
+              />
+              {errors.initial_password && <span style={errorStyle}>{errors.initial_password}</span>}
             </div>
 
             <div style={formGroupStyle}>

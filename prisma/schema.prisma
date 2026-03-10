@@ -174,10 +174,12 @@ model partners {
   id                                                               String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   full_name                                                        String
   email                                                            String?
+  password_hash                                                    String?
   phone                                                            String?
   domicile_city                                                    String?
   domicile_province                                                String?
   partner_type                                                     partner_type
+  is_admin                                                         Boolean                 @default(false)
   experience_level                                                 String?
   is_active                                                        Boolean                 @default(true)
   notes                                                            String?

@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from '@tanstack/react-router'
+import { useLocation } from '@tanstack/react-router'
 import * as React from 'react'
 import { getAuthUser } from '../server/auth'
 
@@ -13,7 +13,6 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [isLoading, setIsLoading] = React.useState(true)
   const [isAuthenticated, setIsAuthenticated] = React.useState(false)
-  const navigate = useNavigate()
   const location = useLocation()
 
   React.useEffect(() => {

@@ -86,25 +86,44 @@ function LoginComponent() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        padding: '1.5rem',
         fontFamily: 'system-ui, -apple-system, sans-serif',
-        backgroundColor: '#f5f5f5',
+        background: 'linear-gradient(135deg, #0f172a 0%, #111827 45%, #1f2937 100%)',
       }}
     >
       <div
         style={{
-          backgroundColor: 'white',
+          backgroundColor: '#111827',
           padding: '2rem',
-          borderRadius: '8px',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+          borderRadius: '16px',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          boxShadow: '0 24px 60px rgba(0, 0, 0, 0.45)',
           width: '100%',
-          maxWidth: '400px',
+          maxWidth: '420px',
         }}
       >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            marginBottom: '1.5rem',
+          }}
+        >
+          <img
+            src="/halalin-logo.png"
+            alt="Halalin"
+            style={{
+              width: '160px',
+              height: 'auto',
+              display: 'block',
+            }}
+          />
+        </div>
         <h1
           style={{
             textAlign: 'center',
-            marginBottom: '1.5rem',
-            color: '#333',
+            marginBottom: '0.5rem',
+            color: '#f9fafb',
           }}
         >
           Masuk
@@ -112,7 +131,7 @@ function LoginComponent() {
         <p
           style={{
             textAlign: 'center',
-            color: '#666',
+            color: '#9ca3af',
             marginBottom: '1.5rem',
           }}
         >
@@ -140,7 +159,7 @@ function LoginComponent() {
                 display: 'block',
                 marginBottom: '0.5rem',
                 fontWeight: 500,
-                color: '#374151',
+                color: '#e5e7eb',
               }}
             >
               Email
@@ -154,10 +173,12 @@ function LoginComponent() {
               style={{
                 width: '100%',
                 padding: '0.75rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '4px',
+                border: '1px solid #374151',
+                borderRadius: '8px',
                 fontSize: '1rem',
                 boxSizing: 'border-box',
+                backgroundColor: '#1f2937',
+                color: '#f9fafb',
               }}
               placeholder="Masukkan email Anda"
             />
@@ -169,7 +190,7 @@ function LoginComponent() {
                 display: 'block',
                 marginBottom: '0.5rem',
                 fontWeight: 500,
-                color: '#374151',
+                color: '#e5e7eb',
               }}
             >
               Kata Sandi
@@ -183,10 +204,12 @@ function LoginComponent() {
               style={{
                 width: '100%',
                 padding: '0.75rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '4px',
+                border: '1px solid #374151',
+                borderRadius: '8px',
                 fontSize: '1rem',
                 boxSizing: 'border-box',
+                backgroundColor: '#1f2937',
+                color: '#f9fafb',
               }}
               placeholder="Masukkan kata sandi"
             />
@@ -200,7 +223,7 @@ function LoginComponent() {
               backgroundColor: '#2563eb',
               color: 'white',
               border: 'none',
-              borderRadius: '4px',
+              borderRadius: '8px',
               fontSize: '1rem',
               fontWeight: 500,
               cursor: isLoading ? 'not-allowed' : 'pointer',

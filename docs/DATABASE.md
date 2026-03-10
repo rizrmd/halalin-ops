@@ -13,8 +13,8 @@ Model ini sudah diasumsikan **form dibangun internal**, bukan bergantung ke Jotf
 
 File utama:
 
-- Schema: [schema.sql](/home/riz/halal-form/schema.sql)
-- Seed contoh: [seed_sppg_mabes_polri.sql](/home/riz/halal-form/seed_sppg_mabes_polri.sql)
+- Schema: `database/schema.sql`
+- Seed contoh: `database/seed_sppg_mabes_polri.sql`
 
 ## Business Context
 
@@ -202,6 +202,10 @@ Enum penting di schema:
 - `finding_category`: `major`, `minor`, `observation`
 - `action_status`: `open`, `in_progress`, `waiting_verification`, `closed`, `rejected`
 
+Catatan otorisasi:
+
+- `partners.is_admin` menandai akun internal yang boleh menambah user/mitra baru ke sistem
+
 ## Reporting and SLA
 
 View yang disediakan:
@@ -221,7 +225,7 @@ Ini penting untuk Project Manager Halalin.
 
 File seed contoh:
 
-- [seed_sppg_mabes_polri.sql](/home/riz/halal-form/seed_sppg_mabes_polri.sql)
+- `database/seed_sppg_mabes_polri.sql`
 
 Seed ini membuat:
 
@@ -238,8 +242,8 @@ Seed ini membuat:
 
 Urutan dasar:
 
-1. Jalankan [schema.sql](/home/riz/halal-form/schema.sql)
-2. Jalankan [seed_sppg_mabes_polri.sql](/home/riz/halal-form/seed_sppg_mabes_polri.sql)
+1. Jalankan `database/schema.sql`
+2. Jalankan `database/seed_sppg_mabes_polri.sql`
 3. Tambahkan seed pertanyaan ke `questions`
 4. Bangun UI form internal berdasarkan `question_banks`
 5. Simpan submission ke tabel operasional yang sesuai
@@ -247,8 +251,8 @@ Urutan dasar:
 Contoh command:
 
 ```bash
-psql "$DATABASE_URL" -f /home/riz/halal-form/schema.sql
-psql "$DATABASE_URL" -f /home/riz/halal-form/seed_sppg_mabes_polri.sql
+psql "$DATABASE_URL" -f database/schema.sql
+psql "$DATABASE_URL" -f database/seed_sppg_mabes_polri.sql
 ```
 
 ## Recommended Next Tables/Seeds
@@ -270,4 +274,3 @@ Anda bisa lanjutkan ke:
 - Prisma schema
 - backend API
 - admin dashboard
-

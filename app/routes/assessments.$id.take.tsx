@@ -1,12 +1,16 @@
+import type {
+  QUESTION_TYPE_LABELS,
+  QuestionWithOption,
+  TakeAssessmentResponse,
+} from '../server/assessments'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
-import { createFileRoute } from '@tanstack/react-router'
 import {
   getTakeAssessment,
+
   saveAssessmentResponse,
   submitAssessment,
-  type TakeAssessmentResponse,
-  type QuestionWithOption,
-  QUESTION_TYPE_LABELS,
+
 } from '../server/assessments'
 
 export const Route = createFileRoute('/assessments/$id/take')({
@@ -29,59 +33,71 @@ interface ResponseData {
   awarded_score?: number
 }
 
+function createInitialResponses(questions: QuestionWithOption[]): ResponseData[] {
+  return questions.map(question => ({
+    question_id: question.id,
+    answer_text: '',
+    selected_option_ids: [],
+    awarded_score: undefined,
+  }))
+}
+
 function TakeAssessmentComponent() {
+  const navigate = useNavigate()
   const initialData = Route.useLoaderData() as TakeAssessmentResponse
-  const { user } = Route.useRouteContext() as { user: { id: string; name: string; email: string | null; partnerType: string } }
-  
+
   const [session] = React.useState(initialData.session)
   const [questions] = React.useState(initialData.questions)
   const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0)
-  const [responses, setResponses] = React.useState<ResponseData[]>([])
+  const [responses, setResponses] = React.useState<ResponseData[]>(() => createInitialResponses(initialData.questions))
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [success, setSuccess] = React.useState(false)
   const [autoSaveStatus, setAutoSaveStatus] = React.useState<'saved' | 'saving' | 'idle'>('idle')
 
-  // Initialize responses array based on questions
-  React.useEffect(() => {
-    if (questions.length > 0 && responses.length === 0) {
-      const initialResponses: ResponseData[] = questions.map(q => ({
-        question_id: q.id,
+  const currentQuestion = questions[currentQuestionIndex]
+  const totalQuestions = questions.length
+  const currentResponse = responses[currentQuestionIndex] ?? {
+    question_id: currentQuestion?.id ?? '',
+    answer_text: '',
+    selected_option_ids: [],
+    awarded_score: undefined,
+  }
+
+  const handleResponseChange = (field: 'answer_text' | 'selected_option_ids' | 'awarded_score', value: string | string[] | number) => {
+    setResponses((prev) => {
+      const newResponses = [...prev]
+      const currentResponse = {
         answer_text: '',
         selected_option_ids: [],
         awarded_score: undefined,
-      }))
-      setResponses(initialResponses)
-    }
-  }, [questions])
+        ...newResponses[currentQuestionIndex],
+        question_id: newResponses[currentQuestionIndex]?.question_id ?? currentQuestion?.id ?? '',
+      }
 
-  const currentQuestion = questions[currentQuestionIndex]
-  const totalQuestions = questions.length
-
-  const handleResponseChange = (field: 'answer_text' | 'selected_option_ids' | 'awarded_score', value: string | string[] | number) => {
-    setResponses(prev => {
-      const newResponses = [...prev]
-      const currentResponse = { ...newResponses[currentQuestionIndex] }
-      
       if (field === 'answer_text') {
         currentResponse.answer_text = value as string
-      } else if (field === 'selected_option_ids') {
-        currentResponse.selected_option_ids = value as string[]
-      } else if (field === 'awarded_score') {
-        currentResponse.awarded_score = typeof value === 'number' ? value : parseFloat(value as string)
       }
-      
+      else if (field === 'selected_option_ids') {
+        currentResponse.selected_option_ids = value as string[]
+      }
+      else if (field === 'awarded_score') {
+        currentResponse.awarded_score = typeof value === 'number' ? value : Number.parseFloat(value as string)
+      }
+
       newResponses[currentQuestionIndex] = currentResponse
       return newResponses
     })
-    if (error) setError(null)
+    if (error)
+      setError(null)
   }
 
   const handleAutoSave = React.useCallback(async () => {
-    if (!currentQuestion || isSubmitting || success) return
+    if (!currentQuestion || isSubmitting || success)
+      return
 
     setAutoSaveStatus('saving')
-    
+
     try {
       const responseToSave = responses[currentQuestionIndex]
       const result = await saveAssessmentResponse({
@@ -93,11 +109,13 @@ function TakeAssessmentComponent() {
 
       if (result.success) {
         setAutoSaveStatus('saved')
-        setTimeout(() => setAutoSaveStatus('idle'), 2000)
-      } else {
+        setTimeout(setAutoSaveStatus, 2000, 'idle')
+      }
+      else {
         setAutoSaveStatus('idle')
       }
-    } catch (err) {
+    }
+    catch (err) {
       console.error('Error auto-saving response:', err)
       setAutoSaveStatus('idle')
     }
@@ -115,7 +133,8 @@ function TakeAssessmentComponent() {
   }, [responses, currentQuestionIndex, handleAutoSave, currentQuestion])
 
   const handleSaveCurrentResponse = async () => {
-    if (!currentQuestion) return
+    if (!currentQuestion)
+      return
 
     setIsSubmitting(true)
     setError(null)
@@ -132,10 +151,12 @@ function TakeAssessmentComponent() {
       if (!result.success) {
         setError(result.error || 'Gagal menyimpan jawaban')
       }
-    } catch (err) {
+    }
+    catch (err) {
       console.error('Error saving response:', err)
       setError('Terjadi kesalahan saat menyimpan jawaban')
-    } finally {
+    }
+    finally {
       setIsSubmitting(false)
     }
   }
@@ -144,7 +165,8 @@ function TakeAssessmentComponent() {
     if (direction === 'prev' && currentQuestionIndex > 0) {
       handleSaveCurrentResponse()
       setCurrentQuestionIndex(prev => prev - 1)
-    } else if (direction === 'next' && currentQuestionIndex < totalQuestions - 1) {
+    }
+    else if (direction === 'next' && currentQuestionIndex < totalQuestions - 1) {
       handleSaveCurrentResponse()
       setCurrentQuestionIndex(prev => prev + 1)
     }
@@ -160,8 +182,8 @@ function TakeAssessmentComponent() {
       const saveResult = await saveAssessmentResponse({
         data: {
           attemptId: session.id,
-          responses: responses.filter(r => 
-            r.answer_text || r.selected_option_ids?.length || r.awarded_score
+          responses: responses.filter(r =>
+            r.answer_text || r.selected_option_ids?.length || r.awarded_score,
           ),
         },
       })
@@ -186,19 +208,21 @@ function TakeAssessmentComponent() {
       setSuccess(true)
       // Redirect to results page to show scores and correct answers
       setTimeout(() => {
-        window.location.href = `/assessments/${session.id}/results`
+        navigate({ to: `/assessments/${session.id}/results` as never })
       }, 2000)
-    } catch (err) {
+    }
+    catch (err) {
       console.error('Error submitting assessment:', err)
       setError('Terjadi kesalahan saat mengirim penilaian')
-    } finally {
+    }
+    finally {
       setIsSubmitting(false)
     }
   }
 
   const handleCancel = () => {
     if (window.confirm('Apakah Anda yakin ingin membatalkan? Jawaban yang belum disimpan akan hilang.')) {
-      window.location.href = '/assessments'
+      navigate({ to: '/assessments' as never })
     }
   }
 
@@ -211,7 +235,7 @@ function TakeAssessmentComponent() {
           <input
             type="text"
             value={response.answer_text || ''}
-            onChange={(e) => handleResponseChange('answer_text', e.target.value)}
+            onChange={e => handleResponseChange('answer_text', e.target.value)}
             style={inputStyle}
             placeholder="Jawaban Anda"
             disabled={isSubmitting || success}
@@ -222,7 +246,7 @@ function TakeAssessmentComponent() {
         return (
           <textarea
             value={response.answer_text || ''}
-            onChange={(e) => handleResponseChange('answer_text', e.target.value)}
+            onChange={e => handleResponseChange('answer_text', e.target.value)}
             style={{ ...inputStyle, minHeight: '120px', resize: 'vertical' }}
             placeholder="Jawaban Anda"
             rows={5}
@@ -233,7 +257,7 @@ function TakeAssessmentComponent() {
       case 'single_choice':
         return (
           <div style={radioGroupStyle}>
-            {question.question_options.map((option) => (
+            {question.question_options.map(option => (
               <label
                 key={option.id}
                 style={{
@@ -246,13 +270,18 @@ function TakeAssessmentComponent() {
                   name={`question_${question.id}`}
                   value={option.id}
                   checked={response.selected_option_ids?.includes(option.id) || false}
-                  onChange={(e) => handleResponseChange('selected_option_ids', [e.target.value])}
+                  onChange={e => handleResponseChange('selected_option_ids', [e.target.value])}
                   disabled={isSubmitting || success}
                   style={{ cursor: 'pointer' }}
                 />
                 <span>{option.option_label}</span>
                 {Number(option.score_value) > 0 && (
-                  <span style={scoreBadgeStyle}>({Number(option.score_value)} poin)</span>
+                  <span style={scoreBadgeStyle}>
+                    (
+                    {Number(option.score_value)}
+                    {' '}
+                    poin)
+                  </span>
                 )}
               </label>
             ))}
@@ -262,7 +291,7 @@ function TakeAssessmentComponent() {
       case 'multiple_choice':
         return (
           <div style={checkboxGroupStyle}>
-            {question.question_options.map((option) => (
+            {question.question_options.map(option => (
               <label
                 key={option.id}
                 style={{
@@ -286,7 +315,12 @@ function TakeAssessmentComponent() {
                 />
                 <span>{option.option_label}</span>
                 {Number(option.score_value) > 0 && (
-                  <span style={scoreBadgeStyle}>({Number(option.score_value)} poin)</span>
+                  <span style={scoreBadgeStyle}>
+                    (
+                    {Number(option.score_value)}
+                    {' '}
+                    poin)
+                  </span>
                 )}
               </label>
             ))}
@@ -296,7 +330,7 @@ function TakeAssessmentComponent() {
       case 'rating':
         return (
           <div style={ratingGroupStyle}>
-            {[1, 2, 3, 4, 5].map((rating) => (
+            {[1, 2, 3, 4, 5].map(rating => (
               <button
                 key={rating}
                 type="button"
@@ -318,7 +352,7 @@ function TakeAssessmentComponent() {
           <input
             type="date"
             value={response.answer_text || ''}
-            onChange={(e) => handleResponseChange('answer_text', e.target.value)}
+            onChange={e => handleResponseChange('answer_text', e.target.value)}
             style={inputStyle}
             disabled={isSubmitting || success}
           />
@@ -338,7 +372,7 @@ function TakeAssessmentComponent() {
                 name={`question_${question.id}_boolean`}
                 value="true"
                 checked={response.answer_text === 'true'}
-                onChange={(e) => handleResponseChange('answer_text', e.target.value)}
+                onChange={e => handleResponseChange('answer_text', e.target.value)}
                 disabled={isSubmitting || success}
                 style={{ cursor: 'pointer' }}
               />
@@ -355,7 +389,7 @@ function TakeAssessmentComponent() {
                 name={`question_${question.id}_boolean`}
                 value="false"
                 checked={response.answer_text === 'false'}
-                onChange={(e) => handleResponseChange('answer_text', e.target.value)}
+                onChange={e => handleResponseChange('answer_text', e.target.value)}
                 disabled={isSubmitting || success}
                 style={{ cursor: 'pointer' }}
               />
@@ -369,7 +403,7 @@ function TakeAssessmentComponent() {
           <input
             type="text"
             value={response.answer_text || ''}
-            onChange={(e) => handleResponseChange('answer_text', e.target.value)}
+            onChange={e => handleResponseChange('answer_text', e.target.value)}
             style={inputStyle}
             placeholder="Jawaban Anda"
             disabled={isSubmitting || success}
@@ -646,7 +680,7 @@ function TakeAssessmentComponent() {
           <p>Penilaian ini sudah diselesaikan dan tidak dapat diubah lagi.</p>
         </div>
         <button
-          onClick={() => window.location.href = '/assessments'}
+          onClick={() => navigate({ to: '/assessments' as never })}
           style={secondaryButtonStyle}
         >
           Kembali ke Daftar Penilaian
@@ -657,13 +691,15 @@ function TakeAssessmentComponent() {
 
   return (
     <div style={containerStyle}>
-      <style>{`
+      <style>
+        {`
         @media (min-width: 640px) {
           .info-grid {
             grid-template-columns: repeat(2, 1fr) !important;
           }
         }
-      `}</style>
+      `}
+      </style>
 
       <div style={headerStyle}>
         <h1 style={titleStyle}>Kerjakan Penilaian</h1>
@@ -723,7 +759,13 @@ function TakeAssessmentComponent() {
               <div style={progressBarStyle} />
             </div>
             <div style={progressTextStyle}>
-              Pertanyaan {currentQuestionIndex + 1} dari {totalQuestions}
+              Pertanyaan
+              {' '}
+              {currentQuestionIndex + 1}
+              {' '}
+              dari
+              {' '}
+              {totalQuestions}
             </div>
           </div>
 
@@ -733,7 +775,9 @@ function TakeAssessmentComponent() {
               <div style={questionHeaderStyle}>
                 {currentQuestion.section_title && (
                   <div style={questionMetaStyle}>
-                    Bagian: {currentQuestion.section_title}
+                    Bagian:
+                    {' '}
+                    {currentQuestion.section_title}
                   </div>
                 )}
                 <div style={questionPromptStyle}>
@@ -749,7 +793,7 @@ function TakeAssessmentComponent() {
                 )}
               </div>
 
-              {renderQuestionInput(currentQuestion, responses[currentQuestionIndex])}
+              {renderQuestionInput(currentQuestion, currentResponse)}
 
               {/* Auto-save status */}
               <div style={autoSaveStyle}>
@@ -767,23 +811,25 @@ function TakeAssessmentComponent() {
                   ← Sebelumnya
                 </button>
 
-                {currentQuestionIndex === totalQuestions - 1 ? (
-                  <button
-                    onClick={handleSubmitFinal}
-                    style={isSubmitting ? disabledButtonStyle : primaryButtonStyle}
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? 'Menyubmit...' : 'Submit Penilaian'}
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleNavigate('next')}
-                    style={primaryButtonStyle}
-                    disabled={isSubmitting}
-                  >
-                    Berikutnya →
-                  </button>
-                )}
+                {currentQuestionIndex === totalQuestions - 1
+                  ? (
+                      <button
+                        onClick={handleSubmitFinal}
+                        style={isSubmitting ? disabledButtonStyle : primaryButtonStyle}
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? 'Menyubmit...' : 'Submit Penilaian'}
+                      </button>
+                    )
+                  : (
+                      <button
+                        onClick={() => handleNavigate('next')}
+                        style={primaryButtonStyle}
+                        disabled={isSubmitting}
+                      >
+                        Berikutnya →
+                      </button>
+                    )}
               </div>
             </div>
           )}

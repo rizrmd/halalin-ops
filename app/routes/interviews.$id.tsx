@@ -1,5 +1,5 @@
 import type { InterviewScoresResponse, ScoreEntryWithCriterion } from '../server/interviews'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link, Outlet, useLocation } from '@tanstack/react-router'
 import * as React from 'react'
 import {
   getConductInterview,
@@ -69,35 +69,30 @@ function getResultBadgeColor(result: string | null): string {
 
 function getResultTextColor(result: string | null): string {
   if (!result)
-    return '#6b7280'
-  const colorMap: Record<string, string> = {
-    priority_deploy: '#166534',
-    talent_pool: '#1e40af',
-    training_first: '#92400e',
-    hold: '#374151',
-    senior_halal_compliance: '#5b21b6',
-    deployable_penyelia_halal: '#166534',
-    training_required: '#92400e',
-    not_ready: '#991b1b',
-  }
-  return colorMap[result] || '#6b7280'
+    return '#ffffff'
+  return '#ffffff'
 }
 
 function getModeBadgeStyle(mode: string | null): { backgroundColor: string, color: string } {
   if (!mode)
-    return { backgroundColor: '#e5e7eb', color: '#6b7280' }
+    return { backgroundColor: '#6b7280', color: '#ffffff' }
   const colorMap: Record<string, { backgroundColor: string, color: string }> = {
-    onsite: { backgroundColor: '#dbeafe', color: '#1e40af' },
-    online: { backgroundColor: '#dcfce7', color: '#166534' },
-    hybrid: { backgroundColor: '#fef3c7', color: '#92400e' },
+    onsite: { backgroundColor: '#2563eb', color: '#ffffff' },
+    online: { backgroundColor: '#16a34a', color: '#ffffff' },
+    hybrid: { backgroundColor: '#b45309', color: '#ffffff' },
   }
-  return colorMap[mode] || { backgroundColor: '#e5e7eb', color: '#6b7280' }
+  return colorMap[mode] || { backgroundColor: '#6b7280', color: '#ffffff' }
 }
 
 function InterviewDetailComponent() {
+  const location = useLocation()
   const loaderData = Route.useLoaderData()
   const { session, entries, totalScore, maxTotalScore, percentage } = loaderData as LoaderData
   const result = session.result
+
+  if (location.pathname !== `/interviews/${session.id}`) {
+    return <Outlet />
+  }
 
   const containerStyle: React.CSSProperties = {
     maxWidth: '1280px',
@@ -247,9 +242,9 @@ function InterviewDetailComponent() {
       </style>
 
       <div style={headerStyle}>
-        <a href="/interviews" style={backButtonStyle}>
+        <Link to={'/interviews' as never} style={backButtonStyle}>
           ← Kembali
-        </a>
+        </Link>
         <h1 style={titleStyle}>Detail Wawancara</h1>
       </div>
 

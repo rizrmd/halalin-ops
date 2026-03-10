@@ -1,5 +1,5 @@
 import type { FormOptionsResponse, ValidationError } from '../server/interviews'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
 import {
   createInterview,
@@ -44,9 +44,10 @@ const initialFormData: FormData = {
 }
 
 function CreateInterviewComponent() {
+  const navigate = useNavigate()
   const initialData = Route.useLoaderData() as FormOptionsResponse
   const [formData, setFormData] = React.useState<FormData>(initialFormData)
-  const [options, setOptions] = React.useState<FormOptionsResponse>(initialData)
+  const [options] = React.useState<FormOptionsResponse>(initialData)
   const [errors, setErrors] = React.useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [submitError, setSubmitError] = React.useState<string | null>(null)
@@ -106,7 +107,7 @@ function CreateInterviewComponent() {
         setSubmitSuccess(true)
         setFormData(initialFormData)
         setTimeout(() => {
-          window.location.href = '/interviews'
+          navigate({ to: '/interviews' as never })
         }, 1500)
       }
       else if (result.errors) {
@@ -127,7 +128,7 @@ function CreateInterviewComponent() {
   }
 
   const handleCancel = () => {
-    window.location.href = '/interviews'
+    navigate({ to: '/interviews' as never })
   }
 
   // Get today's date in YYYY-MM-DD format for min date

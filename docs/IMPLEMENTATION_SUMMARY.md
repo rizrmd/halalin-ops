@@ -38,7 +38,7 @@ New route displaying assessment results after submission:
 - Added new `/assessments/$id/results` route
 - Updated all type definitions to include new route
 
-### 5. Seed Data (seed_assessment_questions.sql)
+### 5. Seed Data (`database/seed_assessment_questions.sql`)
 - Created seed file with 6 sample questions:
   - 4 objective questions (single_choice, multiple_choice, boolean)
   - 1 essay question (long_text)
@@ -112,4 +112,4 @@ To test the implementation:
 - app/routes/assessments.$id.results.tsx (425 lines, new file)
 - app/routes/assessments.$id.take.tsx (3 lines modified)
 - app/routeTree.gen.ts (26 lines modified)
-- seed_assessment_questions.sql (197 lines, new file)
+- database/seed_assessment_questions.sql (197 lines, new file)

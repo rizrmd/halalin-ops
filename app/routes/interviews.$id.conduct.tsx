@@ -5,7 +5,7 @@ import type {
   QuestionWithOption,
   ScoringCriterion,
 } from '../server/interviews'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
 import {
   calculateInterviewResult,
@@ -49,59 +49,34 @@ interface ResponseData {
   awarded_score?: number
 }
 
-interface FormData {
-  responses: ResponseData[]
-  result?: InterviewResult
-  total_score?: number
-  notes: string
-}
-
 function ConductInterviewComponent() {
+  const navigate = useNavigate()
   const initialData = Route.useLoaderData() as ConductInterviewResponse & { criteria: ScoringCriterion[], maxTotalScore: number }
-  const { user } = Route.useRouteContext() as { user: { id: string, name: string, email: string | null, partnerType: string } }
 
   const [session] = React.useState(initialData.session)
   const [questions] = React.useState(initialData.questions)
   const [criteria] = React.useState(initialData.criteria)
   const [maxTotalScore] = React.useState(initialData.maxTotalScore)
   const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0)
-  const [responses, setResponses] = React.useState<ResponseData[]>([])
+  const [responses, setResponses] = React.useState<ResponseData[]>(() => questions.map(q => ({
+    question_id: q.id,
+    response_text: '',
+    selected_option_ids: [],
+    awarded_score: undefined,
+  })))
   const [scores, setScores] = React.useState<Record<string, { score: string, comment: string }>>({})
   const [result, setResult] = React.useState<InterviewResult | ''>('')
-  const [totalScore, setTotalScore] = React.useState<string>('')
+  const [manualTotalScore, setManualTotalScore] = React.useState<string | null>(null)
   const [notes, setNotes] = React.useState(session.notes || '')
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [success, setSuccess] = React.useState(false)
-
-  // Calculate total score and suggest result based on scores
-  React.useEffect(() => {
-    const calculatedTotal = Object.values(scores).reduce((sum, s) => {
-      const scoreValue = Number.parseFloat(s.score) || 0
-      return sum + scoreValue
-    }, 0)
-
-    setTotalScore(calculatedTotal.toFixed(2))
-
-    // Auto-suggest result based on calculated score
-    if (maxTotalScore > 0 && !result) {
-      const suggestedResult = calculateInterviewResult(calculatedTotal, maxTotalScore)
-      // Don't auto-set, just keep it available
-    }
-  }, [scores, maxTotalScore])
-
-  // Initialize responses array based on questions
-  React.useEffect(() => {
-    if (questions.length > 0 && responses.length === 0) {
-      const initialResponses: ResponseData[] = questions.map(q => ({
-        question_id: q.id,
-        response_text: '',
-        selected_option_ids: [],
-        awarded_score: undefined,
-      }))
-      setResponses(initialResponses)
-    }
-  }, [questions])
+  const isCompleted = session.result !== null && session.result !== undefined
+  const calculatedTotalScore = Object.values(scores).reduce((sum, scoreData) => {
+    const scoreValue = Number.parseFloat(scoreData.score) || 0
+    return sum + scoreValue
+  }, 0).toFixed(2)
+  const totalScore = manualTotalScore ?? calculatedTotalScore
 
   const currentQuestion = questions[currentQuestionIndex]
   const totalQuestions = questions.length
@@ -140,7 +115,7 @@ function ConductInterviewComponent() {
       setError(null)
   }
 
-  const handleSaveScores = async () => {
+  const _handleSaveScores = async () => {
     if (criteria.length === 0)
       return
 
@@ -282,7 +257,7 @@ function ConductInterviewComponent() {
 
       setSuccess(true)
       setTimeout(() => {
-        window.location.href = '/interviews'
+        navigate({ to: '/interviews' as never })
       }, 2000)
     }
     catch (err) {
@@ -296,7 +271,7 @@ function ConductInterviewComponent() {
 
   const handleCancel = () => {
     if (window.confirm('Apakah Anda yakin ingin membatalkan? Jawaban yang belum disimpan akan hilang.')) {
-      window.location.href = '/interviews'
+      navigate({ to: '/interviews' as never })
     }
   }
 
@@ -728,6 +703,15 @@ function ConductInterviewComponent() {
     color: '#166534',
   }
 
+  const warningAlertStyle: React.CSSProperties = {
+    backgroundColor: '#fffbeb',
+    border: '1px solid #fcd34d',
+    borderRadius: '0.375rem',
+    padding: '1rem',
+    marginBottom: '1rem',
+    color: '#92400e',
+  }
+
   const finalSectionStyle: React.CSSProperties = {
     backgroundColor: 'white',
     borderRadius: '0.5rem',
@@ -778,6 +762,67 @@ function ConductInterviewComponent() {
         <div style={successAlertStyle}>
           <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Wawancara Berhasil Diselesaikan!</p>
           <p>Mengalihkan ke daftar wawancara...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (isCompleted) {
+    return (
+      <div style={containerStyle}>
+        <div style={headerStyle}>
+          <h1 style={titleStyle}>Lakukan Wawancara</h1>
+          <p style={{ fontSize: '1rem', color: '#6b7280', marginTop: '0.5rem' }}>
+            Jawab pertanyaan berdasarkan performa kandidat
+          </p>
+        </div>
+
+        <div style={warningAlertStyle} role="alert">
+          <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Wawancara ini sudah selesai.</p>
+          <p style={{ margin: 0 }}>
+            Hasil akhir sudah tersimpan sebagai
+            {' '}
+            {INTERVIEW_RESULT_LABELS[session.result as InterviewResult]}
+            . Gunakan halaman detail untuk melihat ringkasan penilaian.
+          </p>
+        </div>
+
+        <div style={infoCardStyle}>
+          <div className="info-grid" style={infoGridStyle}>
+            <div>
+              <div style={infoLabelStyle}>Kandidat</div>
+              <div style={infoValueStyle}>{session.candidate_name}</div>
+            </div>
+            <div>
+              <div style={infoLabelStyle}>Tanggal</div>
+              <div style={infoValueStyle}>{session.interview_date}</div>
+            </div>
+            <div>
+              <div style={infoLabelStyle}>Mode</div>
+              <div style={infoValueStyle}>{session.interview_mode || '-'}</div>
+            </div>
+            <div>
+              <div style={infoLabelStyle}>Pewawancara</div>
+              <div style={infoValueStyle}>{session.interviewer_name || '-'}</div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            style={primaryButtonStyle}
+            onClick={() => navigate({ to: `/interviews/${session.id}` as never })}
+          >
+            Lihat Detail
+          </button>
+          <button
+            type="button"
+            style={secondaryButtonStyle}
+            onClick={() => navigate({ to: '/interviews' as never })}
+          >
+            Kembali ke Daftar
+          </button>
         </div>
       </div>
     )
@@ -1039,7 +1084,7 @@ function ConductInterviewComponent() {
                 type="number"
                 id="totalScore"
                 value={totalScore}
-                onChange={e => setTotalScore(e.target.value)}
+                onChange={e => setManualTotalScore(e.target.value)}
                 style={inputStyle}
                 placeholder="Masukkan total skor"
                 step="0.01"

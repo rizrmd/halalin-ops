@@ -1,5 +1,5 @@
 import type { AssessmentResultResponse } from '../server/assessments'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
 import {
 
@@ -22,8 +22,8 @@ export const Route = createFileRoute('/assessments/$id/results')({
 })
 
 function AssessmentResultsComponent() {
+  const navigate = useNavigate()
   const initialData = Route.useLoaderData() as AssessmentResultResponse
-  const { user } = Route.useRouteContext() as { user: { id: string, name: string, email: string | null, partnerType: string } }
 
   const [session] = React.useState(initialData.session)
   const [results] = React.useState(initialData.results)
@@ -245,7 +245,7 @@ function AssessmentResultsComponent() {
           Penilaian ini belum diselesaikan. Silakan kerjakan terlebih dahulu.
         </p>
         <button
-          onClick={() => window.location.href = `/assessments/${session.id}/take`}
+          onClick={() => navigate({ to: `/assessments/${session.id}/take` as never })}
           style={buttonStyle}
         >
           Kerjakan Penilaian
@@ -441,7 +441,7 @@ function AssessmentResultsComponent() {
       {/* Back Button */}
       <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
         <button
-          onClick={() => window.location.href = '/assessments'}
+          onClick={() => navigate({ to: '/assessments' as never })}
           style={buttonStyle}
         >
           Kembali ke Daftar Penilaian

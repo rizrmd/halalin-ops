@@ -1,9 +1,10 @@
+import type { AuthUser } from '../server/auth'
 import { Link, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
 import { logout } from '../server/auth'
 
 interface HeaderProps {
-  user: { id: string, name: string, email: string | null, partnerType: string } | null
+  user: AuthUser | null
 }
 
 export default function Header({ user }: HeaderProps) {
@@ -12,7 +13,7 @@ export default function Header({ user }: HeaderProps) {
 
   const handleLogout = async () => {
     await logout()
-    window.location.href = '/login'
+    navigate({ to: '/login' as never })
   }
 
   const navigationItems = [
@@ -105,6 +106,16 @@ export default function Header({ user }: HeaderProps) {
     display: 'flex',
     alignItems: 'center',
     gap: '1rem',
+  }
+
+  const profileLinkStyle: React.CSSProperties = {
+    padding: '0.5rem 0.75rem',
+    borderRadius: '0.375rem',
+    fontSize: '0.875rem',
+    fontWeight: 500,
+    color: '#d1d5db',
+    textDecoration: 'none',
+    border: '1px solid #374151',
   }
 
   const userNameStyle: React.CSSProperties = {
@@ -205,7 +216,7 @@ export default function Header({ user }: HeaderProps) {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: responsiveStyle }} />
+      <style>{responsiveStyle}</style>
       <header style={headerStyle}>
         <div style={containerStyle}>
           <div style={navWrapperStyle}>
@@ -244,6 +255,9 @@ export default function Header({ user }: HeaderProps) {
               {user
                 ? (
                     <>
+                      <Link to={'/profile' as never} style={profileLinkStyle}>
+                        Profil
+                      </Link>
                       <span style={userNameStyle}>
                         {user.name}
                       </span>
@@ -256,9 +270,9 @@ export default function Header({ user }: HeaderProps) {
                     </>
                   )
                 : (
-                    <a href="/login" style={loginLinkStyle}>
+                    <Link to={'/login' as never} style={loginLinkStyle}>
                       Masuk
-                    </a>
+                    </Link>
                   )}
             </div>
 
@@ -307,6 +321,13 @@ export default function Header({ user }: HeaderProps) {
                   <div style={mobileUserEmailStyle}>{user.email}</div>
                 </div>
                 <div style={{ marginTop: '0.75rem', padding: '0 0.5rem' }}>
+                  <Link
+                    to={'/profile' as never}
+                    style={mobileNavItemStyle}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Profil
+                  </Link>
                   <button
                     onClick={() => {
                       setIsMobileMenuOpen(false)

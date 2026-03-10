@@ -1,9 +1,28 @@
-import type { PartnerListItem, PartnersResponse } from '../server/partners'
-import { createFileRoute } from '@tanstack/react-router'
+import type { AuthUser } from '../server/auth'
+import type { PartnerListItem, PartnersResponse, PartnerType } from '../server/partners'
+import { createFileRoute, Link, Outlet, useLocation } from '@tanstack/react-router'
 import * as React from 'react'
-import { getPartners } from '../server/partners'
+import { DebouncedSearchInput } from '../components/DebouncedSearchInput'
+import { getPartners, PARTNER_TYPE_LABELS, PARTNER_TYPES } from '../server/partners'
+import { parseEnumValue, parsePageSizeValue, parsePageValue, parseQueryValue } from '../utils/listSearch'
+
+interface PartnersSearch {
+  page: number
+  pageSize: number
+  q: string
+  partnerType: PartnerType | 'all'
+  isActive: 'all' | 'active' | 'inactive'
+}
 
 export const Route = createFileRoute('/partners')({
+  validateSearch: (search): PartnersSearch => ({
+    page: parsePageValue(search.page),
+    pageSize: parsePageSizeValue(search.pageSize),
+    q: parseQueryValue(search.q),
+    partnerType: parseEnumValue(search.partnerType, ['all', ...PARTNER_TYPES], 'all'),
+    isActive: parseEnumValue(search.isActive, ['all', 'active', 'inactive'], 'all'),
+  }),
+  loaderDeps: ({ search }) => search,
   component: PartnersComponent,
   beforeLoad: async ({ context }) => {
     if (!context.user) {
@@ -11,8 +30,8 @@ export const Route = createFileRoute('/partners')({
     }
     return { user: context.user }
   },
-  loader: async (): Promise<PartnersResponse> => {
-    return await getPartners({ data: { page: 1, pageSize: 20 } })
+  loader: async ({ deps }): Promise<PartnersResponse> => {
+    return await getPartners({ data: deps })
   },
 })
 
@@ -29,34 +48,45 @@ function formatPartnerType(type: string): string {
 }
 
 function PartnersComponent() {
-  const initialData = Route.useLoaderData() as PartnersResponse
-  const [partners, setPartners] = React.useState<PartnerListItem[]>(initialData.partners)
-  const [currentPage, setCurrentPage] = React.useState(initialData.currentPage)
-  const [totalPages, setTotalPages] = React.useState(initialData.totalPages)
-  const [totalCount, setTotalCount] = React.useState(initialData.totalCount)
-  const [isLoading, setIsLoading] = React.useState(false)
+  const location = useLocation()
+  const navigate = Route.useNavigate()
+  const search = Route.useSearch() as PartnersSearch
+  const { user } = Route.useRouteContext() as { user: AuthUser }
+  const data = Route.useLoaderData() as PartnersResponse
+  const [isPending, startTransition] = React.useTransition()
 
-  const loadPage = async (page: number) => {
-    if (page < 1 || page > totalPages || page === currentPage)
+  React.useEffect(() => {
+    if (search.page === data.currentPage) {
       return
-    setIsLoading(true)
-    try {
-      const response = await getPartners({ data: { page, pageSize: 20 } })
-      setPartners(response.partners)
-      setCurrentPage(response.currentPage)
-      setTotalPages(response.totalPages)
-      setTotalCount(response.totalCount)
     }
-    catch (error) {
-      console.error('Error loading partners:', error)
+
+    void navigate({
+      search: { ...search, page: data.currentPage } as never,
+      replace: true,
+    })
+  }, [data.currentPage, navigate, search])
+
+  const updateSearch = (nextSearch: Partial<PartnersSearch>) => {
+    startTransition(() => {
+      void navigate({
+        search: {
+          ...search,
+          ...nextSearch,
+        } as never,
+      })
+    })
+  }
+
+  const loadPage = (page: number) => {
+    if (page < 1 || page > data.totalPages || page === data.currentPage) {
+      return
     }
-    finally {
-      setIsLoading(false)
-    }
+
+    updateSearch({ page })
   }
 
   const handleCreatePartner = () => {
-    window.location.href = '/partners/new'
+    void navigate({ to: '/partners/new' as never })
   }
 
   const containerStyle: React.CSSProperties = {
@@ -102,6 +132,24 @@ function PartnersComponent() {
     gap: '0.5rem',
   }
 
+  const filterBarStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(240px, 1.5fr) repeat(2, minmax(180px, 1fr))',
+    gap: '0.75rem',
+    marginBottom: '1rem',
+  }
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    minHeight: '44px',
+    padding: '0.75rem 0.875rem',
+    border: '1px solid #d1d5db',
+    borderRadius: '0.5rem',
+    fontSize: '0.875rem',
+    color: '#111827',
+    backgroundColor: 'white',
+  }
+
   const tableContainerStyle: React.CSSProperties = {
     backgroundColor: 'white',
     borderRadius: '0.5rem',
@@ -110,9 +158,10 @@ function PartnersComponent() {
   }
 
   const loadingStyle: React.CSSProperties = {
-    padding: '3rem',
-    textAlign: 'center',
+    padding: '1rem',
+    borderBottom: '1px solid #e5e7eb',
     color: '#6b7280',
+    fontSize: '0.875rem',
   }
 
   const emptyStyle: React.CSSProperties = {
@@ -196,13 +245,22 @@ function PartnersComponent() {
     fontWeight: 600,
   }
 
-  const startItem = totalCount > 0 ? (currentPage - 1) * 20 + 1 : 0
-  const endItem = Math.min(currentPage * 20, totalCount)
+  const startItem = data.totalCount > 0 ? (data.currentPage - 1) * data.pageSize + 1 : 0
+  const endItem = Math.min(data.currentPage * data.pageSize, data.totalCount)
+
+  if (location.pathname !== '/partners') {
+    return <Outlet />
+  }
 
   return (
     <div style={containerStyle}>
       <style>
         {`
+        @media (max-width: 900px) {
+          .partners-filter-bar {
+            grid-template-columns: 1fr !important;
+          }
+        }
         @media (max-width: 640px) {
           .desktop-table { display: none !important; }
           .mobile-cards { display: block !important; }
@@ -218,121 +276,169 @@ function PartnersComponent() {
         <div style={headerActionsStyle}>
           <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
             Total:
-            {totalCount}
+            {data.totalCount}
             {' '}
             mitra
           </span>
-          <button onClick={handleCreatePartner} style={createButtonStyle}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z" />
-            </svg>
-            Tambah Mitra
-          </button>
+          {user.isAdmin && (
+            <button onClick={handleCreatePartner} style={createButtonStyle}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z" />
+              </svg>
+              Tambah Mitra
+            </button>
+          )}
         </div>
       </div>
 
-      {isLoading
-        ? (
-            <div style={loadingStyle}>Memuat data mitra...</div>
-          )
-        : (
-            <div style={tableContainerStyle}>
-              <table className="desktop-table" style={tableStyle}>
-                <thead>
-                  <tr>
-                    <th style={thStyle}>Nama</th>
-                    <th style={thStyle}>Email</th>
-                    <th style={thStyle}>Telepon</th>
-                    <th style={thStyle}>Tipe Mitra</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {partners.length === 0
-                    ? (
-                        <tr><td colSpan={4} style={emptyStyle}>Tidak ada data mitra yang tersedia.</td></tr>
-                      )
-                    : (
-                        partners.map(partner => (
-                          <tr key={partner.id}>
-                            <td style={tdStyle}>
-                              <a href={`/partners/${partner.id}`} style={{ color: '#111827', textDecoration: 'none' }}>
-                                {partner.full_name}
-                              </a>
-                            </td>
-                            <td style={tdStyle}>{partner.email || '-'}</td>
-                            <td style={tdStyle}>{partner.phone || '-'}</td>
-                            <td style={tdStyle}>
-                              <span style={partnerTypeBadgeStyle}>{formatPartnerType(partner.partner_type)}</span>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                </tbody>
-              </table>
+      <div className="partners-filter-bar" style={filterBarStyle}>
+        <DebouncedSearchInput
+          key={search.q}
+          defaultValue={search.q}
+          placeholder="Cari nama, email, atau telepon"
+          style={inputStyle}
+          onValueChange={(value) => {
+            if (value === search.q) {
+              return
+            }
 
-              <div className="mobile-cards">
-                {partners.length === 0
-                  ? (
-                      <div style={emptyStyle}>Tidak ada data mitra yang tersedia.</div>
-                    )
-                  : (
-                      partners.map(partner => (
-                        <div key={partner.id} style={mobileCardStyle}>
-                          <div>
-                            <a href={`/partners/${partner.id}`}>{partner.full_name}</a>
-                          </div>
-                          <div>{formatPartnerType(partner.partner_type)}</div>
-                        </div>
-                      ))
-                    )}
-              </div>
+            startTransition(() => {
+              void navigate({
+                search: {
+                  ...search,
+                  q: value.trim(),
+                  page: 1,
+                } as never,
+                replace: true,
+              })
+            })
+          }}
+        />
+        <select
+          value={search.partnerType}
+          onChange={event => updateSearch({
+            partnerType: event.target.value as PartnersSearch['partnerType'],
+            page: 1,
+          })}
+          style={inputStyle}
+        >
+          <option value="all">Semua tipe</option>
+          {PARTNER_TYPES.map(type => (
+            <option key={type} value={type}>{PARTNER_TYPE_LABELS[type]}</option>
+          ))}
+        </select>
+        <select
+          value={search.isActive}
+          onChange={event => updateSearch({
+            isActive: event.target.value as PartnersSearch['isActive'],
+            page: 1,
+          })}
+          style={inputStyle}
+        >
+          <option value="all">Semua status</option>
+          <option value="active">Aktif</option>
+          <option value="inactive">Nonaktif</option>
+        </select>
+      </div>
 
-              {totalPages > 1 && (
-                <div style={paginationStyle}>
-                  <div>
-                    Menampilkan
-                    {startItem}
-                    {' '}
-                    -
-                    {endItem}
-                    {' '}
-                    dari
-                    {totalCount}
-                    {' '}
-                    data
+      <div style={tableContainerStyle}>
+        {isPending && <div style={loadingStyle}>Memperbarui daftar mitra...</div>}
+
+        <table className="desktop-table" style={tableStyle}>
+          <thead>
+            <tr>
+              <th style={thStyle}>Nama</th>
+              <th style={thStyle}>Email</th>
+              <th style={thStyle}>Telepon</th>
+              <th style={thStyle}>Tipe Mitra</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.partners.length === 0
+              ? (
+                  <tr><td colSpan={4} style={emptyStyle}>Tidak ada data mitra yang sesuai.</td></tr>
+                )
+              : (
+                  data.partners.map((partner: PartnerListItem) => (
+                    <tr key={partner.id}>
+                      <td style={tdStyle}>
+                        <Link to={'/partners/$id' as never} params={{ id: partner.id } as never} style={{ color: '#111827', textDecoration: 'none' }}>
+                          {partner.full_name}
+                        </Link>
+                      </td>
+                      <td style={tdStyle}>{partner.email || '-'}</td>
+                      <td style={tdStyle}>{partner.phone || '-'}</td>
+                      <td style={tdStyle}>
+                        <span style={partnerTypeBadgeStyle}>{formatPartnerType(partner.partner_type)}</span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+          </tbody>
+        </table>
+
+        <div className="mobile-cards">
+          {data.partners.length === 0
+            ? (
+                <div style={emptyStyle}>Tidak ada data mitra yang sesuai.</div>
+              )
+            : (
+                data.partners.map((partner: PartnerListItem) => (
+                  <div key={partner.id} style={mobileCardStyle}>
+                    <div>
+                      <Link to={'/partners/$id' as never} params={{ id: partner.id } as never}>{partner.full_name}</Link>
+                    </div>
+                    <div>{formatPartnerType(partner.partner_type)}</div>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.25rem' }}>
-                    <button
-                      onClick={() => loadPage(currentPage - 1)}
-                      disabled={currentPage === 1 || isLoading}
-                      style={currentPage === 1 ? buttonDisabledStyle : buttonBaseStyle}
-                    >
-                      &larr;
-                    </button>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1)
-                      .filter(page => page <= 2 || page > totalPages - 2 || Math.abs(page - currentPage) <= 1)
-                      .map(page => (
-                        <button
-                          key={page}
-                          onClick={() => loadPage(page)}
-                          disabled={isLoading}
-                          style={page === currentPage ? buttonActiveStyle : buttonBaseStyle}
-                        >
-                          {page}
-                        </button>
-                      ))}
-                    <button
-                      onClick={() => loadPage(currentPage + 1)}
-                      disabled={currentPage === totalPages || isLoading}
-                      style={currentPage === totalPages ? buttonDisabledStyle : buttonBaseStyle}
-                    >
-                      &rarr;
-                    </button>
-                  </div>
-                </div>
+                ))
               )}
+        </div>
+
+        {data.totalPages > 1 && (
+          <div style={paginationStyle}>
+            <div>
+              Menampilkan
+              {startItem}
+              {' '}
+              -
+              {endItem}
+              {' '}
+              dari
+              {data.totalCount}
+              {' '}
+              data
             </div>
-          )}
+            <div style={{ display: 'flex', gap: '0.25rem' }}>
+              <button
+                onClick={() => loadPage(data.currentPage - 1)}
+                disabled={data.currentPage === 1 || isPending}
+                style={data.currentPage === 1 ? buttonDisabledStyle : buttonBaseStyle}
+              >
+                &larr;
+              </button>
+              {Array.from({ length: data.totalPages }, (_, index) => index + 1)
+                .filter(page => page <= 2 || page > data.totalPages - 2 || Math.abs(page - data.currentPage) <= 1)
+                .map(page => (
+                  <button
+                    key={page}
+                    onClick={() => loadPage(page)}
+                    disabled={isPending}
+                    style={page === data.currentPage ? buttonActiveStyle : buttonBaseStyle}
+                  >
+                    {page}
+                  </button>
+                ))}
+              <button
+                onClick={() => loadPage(data.currentPage + 1)}
+                disabled={data.currentPage === data.totalPages || isPending}
+                style={data.currentPage === data.totalPages ? buttonDisabledStyle : buttonBaseStyle}
+              >
+                &rarr;
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

@@ -1,23 +1,12 @@
+import type { AuthUser } from '../server/auth'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import { createRootRoute, HeadContent, Outlet, Scripts } from '@tanstack/react-router'
+import { createRootRoute, HeadContent, Outlet, Scripts, useRouterState } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import * as React from 'react'
 import Footer from '../components/Footer'
 import Header from '../components/Header'
 import { getAuthUser } from '../server/auth'
 import appCss from '../styles.css?url'
-
-// Validate SESSION_SECRET at startup
-// Note: This runs on server, not client
-if (typeof window === 'undefined') {
-  try {
-    const sessionModule = await import('../server/session')
-    sessionModule.validateSessionConfig()
-  }
-  catch (error) {
-    console.error('⚠️ SESSION_SECRET not configured properly:', error)
-  }
-}
 
 const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}});`
 
@@ -39,7 +28,9 @@ export const Route = createRootRoute({
 })
 
 function RootComponent() {
-  const { user } = Route.useRouteContext() as { user: { id: string, name: string, email: string | null, partnerType: string } | null }
+  const { user } = Route.useRouteContext() as { user: AuthUser | null }
+  const pathname = useRouterState({ select: state => state.location.pathname })
+  const hideHeader = pathname === '/login'
 
   const bodyStyle: React.CSSProperties = {
     fontFamily: 'system-ui, -apple-system, sans-serif',
@@ -59,11 +50,11 @@ function RootComponent() {
   return (
     <html lang="id" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script>{THEME_INIT_SCRIPT}</script>
         <HeadContent />
       </head>
       <body style={bodyStyle}>
-        <Header user={user} />
+        {!hideHeader && <Header user={user} />}
         <main style={mainStyle}>
           <Outlet />
         </main>
