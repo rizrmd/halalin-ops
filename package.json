@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "vite dev --port 3000",
     "build": "vite build",
-    "start": "node dist/server/ssr.js",
+    "start": "node --experimental-vm-modules dist/server/ssr.js",
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
