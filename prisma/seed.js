@@ -7,25 +7,25 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('Starting database seed...')
 
-  // Create default organization
+  // Create default organization (use proper UUID format)
   const org = await prisma.organizations.upsert({
-    where: { id: 'default-org' },
+    where: { id: '00000000-0000-0000-0000-000000000001' },
     update: {},
     create: {
-      id: 'default-org',
+      id: '00000000-0000-0000-0000-000000000001',
       name: 'Default Organization',
       org_type: 'internal',
     },
   })
   console.log('✓ Created organization:', org.name)
 
-  // Create admin user
+  // Create admin user (use proper UUID format)
   const hashedPassword = await bcrypt.hash('admin123', 10)
   const admin = await prisma.partners.upsert({
     where: { email: 'admin@halalin.co.id' },
     update: {},
     create: {
-      id: 'admin-user',
+      id: '00000000-0000-0000-0000-000000000002',
       full_name: 'Admin User',
       email: 'admin@halalin.co.id',
       password_hash: hashedPassword,
@@ -36,13 +36,13 @@ async function main() {
   })
   console.log('✓ Created admin user:', admin.email)
 
-  // Create sample partner user
+  // Create sample partner user (use proper UUID format)
   const partnerPassword = await bcrypt.hash('partner123', 10)
   const partner = await prisma.partners.upsert({
     where: { email: 'partner@halalin.co.id' },
     update: {},
     create: {
-      id: 'partner-user',
+      id: '00000000-0000-0000-0000-000000000003',
       full_name: 'Partner User',
       email: 'partner@halalin.co.id',
       password_hash: partnerPassword,
@@ -53,12 +53,12 @@ async function main() {
   })
   console.log('✓ Created partner user:', partner.email)
 
-  // Create sample project
+  // Create sample project (use proper UUID format)
   const project = await prisma.projects.upsert({
     where: { code: 'PROJ-001' },
     update: {},
     create: {
-      id: 'project-001',
+      id: '00000000-0000-0000-0000-000000000004',
       code: 'PROJ-001',
       title: 'Sample Project',
       status: 'active',
