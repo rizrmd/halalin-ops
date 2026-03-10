@@ -41,12 +41,10 @@ FROM node:22-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
+ENV COREPACK_ENABLE_STRICT=0
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# Install curl for healthchecks
-RUN apk add --no-cache curl
+# Install curl for healthchecks and install pnpm globally
+RUN apk add --no-cache curl && npm install -g pnpm@latest
 
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
@@ -70,6 +68,9 @@ COPY --from=node:22-alpine /usr/local/bin/docker-entrypoint.sh /usr/local/bin/
 
 # Change ownership of app files
 RUN chown -R nodejs:nodejs /app
+
+# Set HOME to /app to avoid permission issues with nodejs user home directory
+ENV HOME=/app
 
 USER nodejs
 
