@@ -1,7 +1,7 @@
 import { createRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
 
-export const createAppRouter = () => {
+export function createAppRouter() {
   const router = createRouter({
     routeTree,
     defaultPreload: 'intent',
@@ -14,7 +14,8 @@ export const createAppRouter = () => {
         fontFamily: 'system-ui, sans-serif',
         fontSize: '1rem',
         color: '#6b7280',
-      }}>
+      }}
+      >
         Memuat...
       </div>
     ),
@@ -32,7 +33,8 @@ export const createAppRouter = () => {
         <div style={{
           padding: '2rem',
           fontFamily: 'system-ui, sans-serif',
-        }}>
+        }}
+        >
           <h1 style={{ color: '#dc2626', fontSize: '1.5rem' }}>Terjadi Kesalahan</h1>
           <p style={{ color: '#6b7280' }}>
             {error instanceof Error ? error.message : 'Terjadi kesalahan yang tidak diketahui'}

@@ -3,17 +3,17 @@ import { prisma } from './db'
 import { createSession, destroySession, getCurrentUser } from './session'
 
 export const login = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown): { email: string; password: string } => {
+  .inputValidator((data: unknown): { email: string, password: string } => {
     if (typeof data !== 'object' || data === null) {
       throw new Error('Data harus berupa objek')
     }
     const { email, password } = data as Record<string, unknown>
     if (typeof email !== 'string' || typeof password !== 'string') {
-      throw new Error('Email dan kata sandi harus berupa string')
+      throw new TypeError('Email dan kata sandi harus berupa string')
     }
     return { email, password }
   })
-  .handler(async ({ data }): Promise<{ success: boolean; error?: string; user?: { id: string; name: string; email: string | null } }> => {
+  .handler(async ({ data }): Promise<{ success: boolean, error?: string, user?: { id: string, name: string, email: string | null } }> => {
     const { email, password } = data
 
     // Validate input
@@ -60,7 +60,8 @@ export const login = createServerFn({ method: 'POST' })
           email: partner.email,
         },
       }
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Login error:', error)
       return {
         success: false,
@@ -116,7 +117,7 @@ export const isAuthenticated = createServerFn({ method: 'GET' })
  * Returns user data if authenticated, or throws redirect to login.
  * Note: This is a server-only function. Use beforeLoad in routes for client-side
  */
-export async function requireAuth(): Promise<{ id: string; name: string; email: string | null; partnerType: string }> {
+export async function requireAuth(): Promise<{ id: string, name: string, email: string | null, partnerType: string }> {
   const user = await getAuthUser()
   if (!user) {
     throw new Error('UNAUTHORIZED')

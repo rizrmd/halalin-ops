@@ -1,7 +1,7 @@
-import * as React from 'react'
-import { HeadContent, Scripts, createRootRoute, Outlet } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
+import { createRootRoute, HeadContent, Outlet, Scripts } from '@tanstack/react-router'
+import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
+import * as React from 'react'
 import Footer from '../components/Footer'
 import Header from '../components/Header'
 import { getAuthUser } from '../server/auth'
@@ -13,7 +13,8 @@ if (typeof window === 'undefined') {
   try {
     const sessionModule = await import('../server/session')
     sessionModule.validateSessionConfig()
-  } catch (error) {
+  }
+  catch (error) {
     console.error('⚠️ SESSION_SECRET not configured properly:', error)
   }
 }
@@ -38,7 +39,7 @@ export const Route = createRootRoute({
 })
 
 function RootComponent() {
-  const { user } = Route.useRouteContext() as { user: { id: string; name: string; email: string | null; partnerType: string } | null }
+  const { user } = Route.useRouteContext() as { user: { id: string, name: string, email: string | null, partnerType: string } | null }
 
   const bodyStyle: React.CSSProperties = {
     fontFamily: 'system-ui, -apple-system, sans-serif',
@@ -67,12 +68,15 @@ function RootComponent() {
           <Outlet />
         </main>
         <Footer />
-        <TanStackDevtools config={{ position: 'bottom-right' }} plugins={[
-          {
-            name: 'Tanstack Router',
-            render: <TanStackRouterDevtoolsPanel />,
-          },
-        ]} />
+        <TanStackDevtools
+          config={{ position: 'bottom-right' }}
+          plugins={[
+            {
+              name: 'Tanstack Router',
+              render: <TanStackRouterDevtoolsPanel />,
+            },
+          ]}
+        />
         <Scripts />
       </body>
     </html>

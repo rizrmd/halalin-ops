@@ -72,7 +72,7 @@ export interface PartnersResponse {
  * @param pageSize - Number of items per page
  */
 export const getPartners = createServerFn({ method: 'GET' })
-  .inputValidator((data: unknown): { page: number; pageSize: number } => {
+  .inputValidator((data: unknown): { page: number, pageSize: number } => {
     if (typeof data !== 'object' || data === null) {
       return { page: 1, pageSize: 20 }
     }
@@ -84,10 +84,10 @@ export const getPartners = createServerFn({ method: 'GET' })
   .handler(async ({ data }): Promise<PartnersResponse> => {
     const { page, pageSize } = data
     const skip = (page - 1) * pageSize
-    
+
     // Get total count for pagination
     const totalCount = await prisma.partners.count()
-    
+
     // Get paginated partners
     const partners = await prisma.partners.findMany({
       select: {
@@ -103,9 +103,9 @@ export const getPartners = createServerFn({ method: 'GET' })
       skip,
       take: pageSize,
     })
-    
+
     const totalPages = Math.ceil(totalCount / pageSize)
-    
+
     return { partners, totalCount, totalPages, currentPage: page, pageSize }
   })
 
@@ -170,14 +170,15 @@ export const createPartner = createServerFn({ method: 'POST' })
     const partner_type = input.partner_type
     if (!partner_type || typeof partner_type !== 'string') {
       errors.push({ field: 'partner_type', message: 'Tipe mitra wajib dipilih' })
-    } else if (!PARTNER_TYPES.includes(partner_type as PartnerType)) {
+    }
+    else if (!PARTNER_TYPES.includes(partner_type as PartnerType)) {
       errors.push({ field: 'partner_type', message: 'Tipe mitra tidak valid' })
     }
 
     // Validate optional fields format
     const email = input.email
     if (email && typeof email === 'string' && email.trim() !== '') {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      const emailRegex = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/
       if (!emailRegex.test(email)) {
         errors.push({ field: 'email', message: 'Format email tidak valid' })
       }

@@ -1,6 +1,7 @@
+import type { AssessmentListItem, AssessmentsResponse } from '../server/assessments'
+import { createFileRoute } from '@tanstack/react-router'
 import * as React from 'react'
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { getAssessments, type AssessmentsResponse, type AssessmentListItem, COMPETENCY_RESULT_LABELS, ASSESSMENT_STATUS_LABELS } from '../server/assessments'
+import { ASSESSMENT_STATUS_LABELS, COMPETENCY_RESULT_LABELS, getAssessments } from '../server/assessments'
 
 export const Route = createFileRoute('/assessments')({
   component: AssessmentsComponent,
@@ -16,8 +17,8 @@ export const Route = createFileRoute('/assessments')({
   },
 })
 
-function getStatusBadgeStyle(status: string): { backgroundColor: string; color: string } {
-  const colorMap: Record<string, { backgroundColor: string; color: string }> = {
+function getStatusBadgeStyle(status: string): { backgroundColor: string, color: string } {
+  const colorMap: Record<string, { backgroundColor: string, color: string }> = {
     not_started: { backgroundColor: '#f3f4f6', color: '#374151' },
     in_progress: { backgroundColor: '#dbeafe', color: '#1e40af' },
     submitted: { backgroundColor: '#fef3c7', color: '#92400e' },
@@ -26,9 +27,10 @@ function getStatusBadgeStyle(status: string): { backgroundColor: string; color: 
   return colorMap[status] || { backgroundColor: '#f3f4f6', color: '#374151' }
 }
 
-function getResultBadgeColor(result: string | null): { backgroundColor: string; color: string } {
-  if (!result) return { backgroundColor: '#f3f4f6', color: '#374151' }
-  const colorMap: Record<string, { backgroundColor: string; color: string }> = {
+function getResultBadgeColor(result: string | null): { backgroundColor: string, color: string } {
+  if (!result)
+    return { backgroundColor: '#f3f4f6', color: '#374151' }
+  const colorMap: Record<string, { backgroundColor: string, color: string }> = {
     priority_deploy: { backgroundColor: '#dcfce7', color: '#166534' },
     talent_pool: { backgroundColor: '#dbeafe', color: '#1e40af' },
     training_first: { backgroundColor: '#fef3c7', color: '#92400e' },
@@ -42,7 +44,7 @@ function getResultBadgeColor(result: string | null): { backgroundColor: string; 
 }
 
 function AssessmentsComponent() {
-  const { user } = Route.useRouteContext() as { user: { id: string; name: string; email: string | null; partnerType: string } }
+  const { user } = Route.useRouteContext() as { user: { id: string, name: string, email: string | null, partnerType: string } }
   const initialData = Route.useLoaderData() as AssessmentsResponse
   const [assessments, setAssessments] = React.useState<AssessmentListItem[]>(initialData.assessments)
   const [currentPage, setCurrentPage] = React.useState(initialData.currentPage)
@@ -51,7 +53,8 @@ function AssessmentsComponent() {
   const [isLoading, setIsLoading] = React.useState(false)
 
   const loadPage = async (page: number) => {
-    if (page < 1 || page > totalPages || page === currentPage) return
+    if (page < 1 || page > totalPages || page === currentPage)
+      return
     setIsLoading(true)
     try {
       const response = await getAssessments({ data: { page, pageSize: 20 } })
@@ -59,9 +62,11 @@ function AssessmentsComponent() {
       setCurrentPage(response.currentPage)
       setTotalPages(response.totalPages)
       setTotalCount(response.totalCount)
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error loading assessments:', error)
-    } finally {
+    }
+    finally {
       setIsLoading(false)
     }
   }
@@ -196,123 +201,147 @@ function AssessmentsComponent() {
     <div style={containerStyle}>
       <div style={headerStyle}>
         <h1 style={titleStyle}>Daftar Penilaian</h1>
-        <button 
+        <button
           style={createButtonStyle}
           onClick={handleStartNewAssessment}
         >
           + Penilaian Baru
         </button>
       </div>
-      
+
       <div style={tableContainerStyle}>
-        {isLoading ? (
-          <div style={loadingStyle}>Memuat...</div>
-        ) : assessments.length === 0 ? (
-          <div style={emptyStyle}>
-            <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
-              Belum ada penilaian.
-            </p>
-            <button 
-              style={createButtonStyle}
-              onClick={handleStartNewAssessment}
-            >
-              + Penilaian Baru
-            </button>
-          </div>
-        ) : (
-          <>
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Peserta</th>
-                  <th style={thStyle}>Template</th>
-                  <th style={thStyle}>Skor</th>
-                  <th style={thStyle}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {assessments.map((assessment) => {
-                  const statusStyle = getStatusBadgeStyle(assessment.status)
-                  const resultBadge = assessment.competency_result 
-                    ? getResultBadgeColor(assessment.competency_result)
-                    : null
-                  const statusLabel = ASSESSMENT_STATUS_LABELS[assessment.status]
-                  const resultLabel = assessment.competency_result 
-                    ? COMPETENCY_RESULT_LABELS[assessment.competency_result]
-                    : null
-                  
-                  return (
-                    <tr key={assessment.id} style={{ backgroundColor: 'white' }}>
-                      <td style={tdStyle}>
-                        <div style={{ fontWeight: 500 }}>{assessment.participant_name}</div>
-                        {assessment.participant_email && (
-                          <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
-                            {assessment.participant_email}
-                          </div>
-                        )}
-                      </td>
-                      <td style={tdStyle}>
-                        <div style={{ fontWeight: 500 }}>{assessment.template_title}</div>
-                        {assessment.template_code && (
-                          <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
-                            {assessment.template_code}
-                          </div>
-                        )}
-                      </td>
-                      <td style={tdStyle}>
-                        <div style={{ fontWeight: 600, color: '#111827' }}>
-                          {assessment.total_score.toFixed(1)}
-                        </div>
-                        <div style={{ fontSize: '0.775rem', color: '#6b7280' }}>
-                          Obj: {assessment.objective_score.toFixed(1)} | Ess: {assessment.essay_score.toFixed(1)}
-                        </div>
-                        {assessment.competency_result && resultBadge && (
-                          <div style={{ marginTop: '0.5rem' }}>
-                            <span style={badgeStyle(resultBadge.backgroundColor, resultBadge.color)}>
-                              {resultLabel}
-                            </span>
-                          </div>
-                        )}
-                      </td>
-                      <td style={tdStyle}>
-                        <span style={badgeStyle(statusStyle.backgroundColor, statusStyle.color)}>
-                          {statusLabel}
+        {isLoading
+          ? (
+              <div style={loadingStyle}>Memuat...</div>
+            )
+          : assessments.length === 0
+            ? (
+                <div style={emptyStyle}>
+                  <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
+                    Belum ada penilaian.
+                  </p>
+                  <button
+                    style={createButtonStyle}
+                    onClick={handleStartNewAssessment}
+                  >
+                    + Penilaian Baru
+                  </button>
+                </div>
+              )
+            : (
+                <>
+                  <table style={tableStyle}>
+                    <thead>
+                      <tr>
+                        <th style={thStyle}>Peserta</th>
+                        <th style={thStyle}>Template</th>
+                        <th style={thStyle}>Skor</th>
+                        <th style={thStyle}>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {assessments.map((assessment) => {
+                        const statusStyle = getStatusBadgeStyle(assessment.status)
+                        const resultBadge = assessment.competency_result
+                          ? getResultBadgeColor(assessment.competency_result)
+                          : null
+                        const statusLabel = ASSESSMENT_STATUS_LABELS[assessment.status]
+                        const resultLabel = assessment.competency_result
+                          ? COMPETENCY_RESULT_LABELS[assessment.competency_result]
+                          : null
+
+                        return (
+                          <tr key={assessment.id} style={{ backgroundColor: 'white' }}>
+                            <td style={tdStyle}>
+                              <div style={{ fontWeight: 500 }}>{assessment.participant_name}</div>
+                              {assessment.participant_email && (
+                                <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                                  {assessment.participant_email}
+                                </div>
+                              )}
+                            </td>
+                            <td style={tdStyle}>
+                              <div style={{ fontWeight: 500 }}>{assessment.template_title}</div>
+                              {assessment.template_code && (
+                                <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                                  {assessment.template_code}
+                                </div>
+                              )}
+                            </td>
+                            <td style={tdStyle}>
+                              <div style={{ fontWeight: 600, color: '#111827' }}>
+                                {assessment.total_score.toFixed(1)}
+                              </div>
+                              <div style={{ fontSize: '0.775rem', color: '#6b7280' }}>
+                                Obj:
+                                {' '}
+                                {assessment.objective_score.toFixed(1)}
+                                {' '}
+                                | Ess:
+                                {' '}
+                                {assessment.essay_score.toFixed(1)}
+                              </div>
+                              {assessment.competency_result && resultBadge && (
+                                <div style={{ marginTop: '0.5rem' }}>
+                                  <span style={badgeStyle(resultBadge.backgroundColor, resultBadge.color)}>
+                                    {resultLabel}
+                                  </span>
+                                </div>
+                              )}
+                            </td>
+                            <td style={tdStyle}>
+                              <span style={badgeStyle(statusStyle.backgroundColor, statusStyle.color)}>
+                                {statusLabel}
+                              </span>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+
+                  {totalPages > 1 && (
+                    <div style={paginationStyle}>
+                      <div style={pageInfoStyle}>
+                        Menampilkan
+                        {' '}
+                        {assessments.length}
+                        {' '}
+                        dari
+                        {' '}
+                        {totalCount}
+                        {' '}
+                        penilaian
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                          style={currentPage === 1 ? disabledButtonStyle : paginationButtonStyle}
+                          onClick={() => loadPage(currentPage - 1)}
+                          disabled={currentPage === 1}
+                        >
+                          Sebelumnya
+                        </button>
+                        <span style={{ ...pageInfoStyle, display: 'flex', alignItems: 'center' }}>
+                          Halaman
+                          {' '}
+                          {currentPage}
+                          {' '}
+                          dari
+                          {' '}
+                          {totalPages}
                         </span>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-            
-            {totalPages > 1 && (
-              <div style={paginationStyle}>
-                <div style={pageInfoStyle}>
-                  Menampilkan {assessments.length} dari {totalCount} penilaian
-                </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button
-                    style={currentPage === 1 ? disabledButtonStyle : paginationButtonStyle}
-                    onClick={() => loadPage(currentPage - 1)}
-                    disabled={currentPage === 1}
-                  >
-                    Sebelumnya
-                  </button>
-                  <span style={{ ...pageInfoStyle, display: 'flex', alignItems: 'center' }}>
-                    Halaman {currentPage} dari {totalPages}
-                  </span>
-                  <button
-                    style={currentPage === totalPages ? disabledButtonStyle : paginationButtonStyle}
-                    onClick={() => loadPage(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                  >
-                    Berikutnya
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
+                        <button
+                          style={currentPage === totalPages ? disabledButtonStyle : paginationButtonStyle}
+                          onClick={() => loadPage(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                        >
+                          Berikutnya
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
       </div>
     </div>
   )

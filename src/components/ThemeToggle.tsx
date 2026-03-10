@@ -24,7 +24,8 @@ function applyThemeMode(mode: ThemeMode) {
 
   if (mode === 'auto') {
     document.documentElement.removeAttribute('data-theme')
-  } else {
+  }
+  else {
     document.documentElement.setAttribute('data-theme', mode)
   }
 
@@ -55,15 +56,15 @@ export default function ThemeToggle() {
   }, [mode])
 
   function toggleMode() {
-    const nextMode: ThemeMode =
-      mode === 'light' ? 'dark' : mode === 'dark' ? 'auto' : 'light'
+    const nextMode: ThemeMode
+      = mode === 'light' ? 'dark' : mode === 'dark' ? 'auto' : 'light'
     setMode(nextMode)
     applyThemeMode(nextMode)
     window.localStorage.setItem('theme', nextMode)
   }
 
-  const label =
-    mode === 'auto'
+  const label
+    = mode === 'auto'
       ? 'Theme mode: auto (system). Click to switch to light mode.'
       : `Theme mode: ${mode}. Click to switch mode.`
 

@@ -1,10 +1,11 @@
-import * as React from 'react'
+import type { AssessmentFormOptionsResponse, ValidationError } from '../server/assessments'
 import { createFileRoute } from '@tanstack/react-router'
+import * as React from 'react'
 import {
+
   createAssessment,
   getAssessmentFormOptions,
-  type ValidationError,
-  type AssessmentFormOptionsResponse,
+
 } from '../server/assessments'
 
 export const Route = createFileRoute('/assessments/new')({
@@ -42,7 +43,7 @@ function CreateAssessmentComponent() {
   const handleChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     if (errors[field]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev }
         delete newErrors[field]
         return newErrors
@@ -67,7 +68,8 @@ function CreateAssessmentComponent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!validateForm()) return
+    if (!validateForm())
+      return
 
     setIsSubmitting(true)
     setSubmitError(null)
@@ -87,17 +89,20 @@ function CreateAssessmentComponent() {
         setTimeout(() => {
           window.location.href = `/assessments/${result.assessmentId}/take`
         }, 1500)
-      } else if (result.errors) {
+      }
+      else if (result.errors) {
         const fieldErrors: Record<string, string> = {}
         result.errors.forEach((err: ValidationError) => {
           fieldErrors[err.field] = err.message
         })
         setErrors(fieldErrors)
       }
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error creating assessment:', error)
       setSubmitError('Terjadi kesalahan saat menyimpan data. Silakan coba lagi.')
-    } finally {
+    }
+    finally {
       setIsSubmitting(false)
     }
   }
@@ -248,13 +253,15 @@ function CreateAssessmentComponent() {
 
   return (
     <div style={containerStyle}>
-      <style>{`
+      <style>
+        {`
         @media (min-width: 640px) {
           .form-grid {
             grid-template-columns: repeat(2, 1fr) !important;
           }
         }
-      `}</style>
+      `}
+      </style>
 
       <div style={headerStyle}>
         <h1 style={titleStyle}>Mulai Penilaian Baru</h1>
@@ -275,19 +282,22 @@ function CreateAssessmentComponent() {
           <div className="form-grid" style={formGridStyle}>
             <div style={{ ...formGroupStyle, gridColumn: '1 / -1' }}>
               <label htmlFor="participant_id" style={labelStyle}>
-                Peserta<span style={requiredMarkStyle}>*</span>
+                Peserta
+                <span style={requiredMarkStyle}>*</span>
               </label>
               <select
                 id="participant_id"
                 value={formData.participant_id}
-                onChange={(e) => handleChange('participant_id', e.target.value)}
+                onChange={e => handleChange('participant_id', e.target.value)}
                 style={{ ...selectStyle, ...(errors.participant_id ? inputErrorStyle : {}) }}
                 disabled={isSubmitting || submitSuccess}
               >
                 <option value="">Pilih Peserta</option>
-                {options.participants.map((participant) => (
+                {options.participants.map(participant => (
                   <option key={participant.id} value={participant.id}>
-                    {participant.full_name} {participant.partner_type && `(${participant.partner_type})`}
+                    {participant.full_name}
+                    {' '}
+                    {participant.partner_type && `(${participant.partner_type})`}
                   </option>
                 ))}
               </select>
@@ -301,19 +311,22 @@ function CreateAssessmentComponent() {
 
             <div style={{ ...formGroupStyle, gridColumn: '1 / -1' }}>
               <label htmlFor="bank_id" style={labelStyle}>
-                Template Pertanyaan<span style={requiredMarkStyle}>*</span>
+                Template Pertanyaan
+                <span style={requiredMarkStyle}>*</span>
               </label>
               <select
                 id="bank_id"
                 value={formData.bank_id}
-                onChange={(e) => handleChange('bank_id', e.target.value)}
+                onChange={e => handleChange('bank_id', e.target.value)}
                 style={{ ...selectStyle, ...(errors.bank_id ? inputErrorStyle : {}) }}
                 disabled={isSubmitting || submitSuccess}
               >
                 <option value="">Pilih Template</option>
-                {options.questionBanks.map((bank) => (
+                {options.questionBanks.map(bank => (
                   <option key={bank.id} value={bank.id}>
-                    {bank.title} {bank.template_code && `(${bank.template_code})`}
+                    {bank.title}
+                    {' '}
+                    {bank.template_code && `(${bank.template_code})`}
                   </option>
                 ))}
               </select>
@@ -338,10 +351,10 @@ function CreateAssessmentComponent() {
             <button
               type="submit"
               disabled={
-                isSubmitting || 
-                submitSuccess || 
-                options.participants.length === 0 || 
-                options.questionBanks.length === 0
+                isSubmitting
+                || submitSuccess
+                || options.participants.length === 0
+                || options.questionBanks.length === 0
               }
               style={primaryButtonStyle}
             >

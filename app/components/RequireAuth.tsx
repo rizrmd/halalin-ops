@@ -1,5 +1,5 @@
+import { useLocation, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
-import { useNavigate, useLocation } from '@tanstack/react-router'
 import { getAuthUser } from '../server/auth'
 
 interface RequireAuthProps {
@@ -14,7 +14,7 @@ export function RequireAuth({ children }: RequireAuthProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const [authState, setAuthState] = React.useState<{
-    user: { id: string; name: string; email: string | null; partnerType: string } | null
+    user: { id: string, name: string, email: string | null, partnerType: string } | null
     loading: boolean
   }>({ user: null, loading: true })
 
@@ -33,7 +33,8 @@ export function RequireAuth({ children }: RequireAuthProps) {
             navigate({ to: '/', search: { redirectTo } })
           }
         }
-      } catch (error) {
+      }
+      catch (error) {
         if (!cancelled) {
           setAuthState({ user: null, loading: false })
         }
@@ -54,8 +55,9 @@ export function RequireAuth({ children }: RequireAuthProps) {
         justifyContent: 'center',
         alignItems: 'center',
         height: '100vh',
-        fontFamily: 'system-ui'
-      }}>
+        fontFamily: 'system-ui',
+      }}
+      >
         <div>Memuat...</div>
       </div>
     )
@@ -68,8 +70,9 @@ export function RequireAuth({ children }: RequireAuthProps) {
         justifyContent: 'center',
         alignItems: 'center',
         height: '100vh',
-        fontFamily: 'system-ui'
-      }}>
+        fontFamily: 'system-ui',
+      }}
+      >
         <div>Mengarahkan ke halaman masuk...</div>
       </div>
     )

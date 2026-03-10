@@ -99,6 +99,8 @@ error while loading shared libraries: libatk-1.0.so.0: cannot open shared object
 4. Attempted Firefox browser - ✗ Also requires system dependencies
 5. Cannot use `sudo apt-get install` - No root access available
 
+**Round 2 Update (2026-03-10)**: Issue persists. Attempted `agent-browser install` (Chromium binary installed successfully) followed by `agent-browser install --with-deps` (failed - requires sudo password). Browser launch still fails with same libatk-1.0.so.0 error.
+
 **Impact**: All assertions requiring browser automation (screenshots, form interaction) are BLOCKED. This affects:
 - All VAL-ASSESS-* assertions
 - All VAL-UI-* assertions requiring visual verification
@@ -109,6 +111,7 @@ error while loading shared libraries: libatk-1.0.so.0: cannot open shared object
 2. Containerized browser with bundled dependencies
 3. Root access to install missing packages
 4. Manual human testing as fallback
+5. Switch to API-only testing without browser automation
 
 **Code Verified**: Through detailed code analysis, all features are confirmed implemented:
 - Assessment list with Indonesian labels and pagination

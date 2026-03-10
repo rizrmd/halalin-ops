@@ -40,8 +40,8 @@ Create failing tests before implementation:
 Example test pattern:
 ```typescript
 // Test server function
-const result = await getProjects({});
-expect(result).toBeDefined();
+const result = await getProjects({})
+expect(result).toBeDefined()
 ```
 
 ### 4. Implement (Green)

@@ -1,19 +1,24 @@
-import * as React from 'react'
-import { createFileRoute } from '@tanstack/react-router'
-import {
-  getConductInterview,
-  saveInterviewResponse,
-  completeInterview,
-  getScoringCriteria,
-  saveInterviewScore,
-  calculateInterviewResult,
-  type ConductInterviewResponse,
-  type QuestionWithOption,
-  type InterviewResult,
-  type ScoringCriterion,
-  INTERVIEW_RESULTS,
-  INTERVIEW_RESULT_LABELS,
+import type {
+  ConductInterviewResponse,
+  InterviewResult,
   QUESTION_TYPE_LABELS,
+  QuestionWithOption,
+  ScoringCriterion,
+} from '../server/interviews'
+import { createFileRoute } from '@tanstack/react-router'
+import * as React from 'react'
+import {
+  calculateInterviewResult,
+  completeInterview,
+
+  getConductInterview,
+  getScoringCriteria,
+  INTERVIEW_RESULT_LABELS,
+  INTERVIEW_RESULTS,
+
+  saveInterviewResponse,
+  saveInterviewScore,
+
 } from '../server/interviews'
 
 export const Route = createFileRoute('/interviews/$id/conduct')({
@@ -24,7 +29,7 @@ export const Route = createFileRoute('/interviews/$id/conduct')({
     }
     return { user: context.user }
   },
-  loader: async ({ params }): Promise<ConductInterviewResponse & { criteria: ScoringCriterion[]; maxTotalScore: number }> => {
+  loader: async ({ params }): Promise<ConductInterviewResponse & { criteria: ScoringCriterion[], maxTotalScore: number }> => {
     const [interviewData, scoringData] = await Promise.all([
       getConductInterview({ data: { interviewId: params.id } }),
       getScoringCriteria({}),
@@ -52,16 +57,16 @@ interface FormData {
 }
 
 function ConductInterviewComponent() {
-  const initialData = Route.useLoaderData() as ConductInterviewResponse & { criteria: ScoringCriterion[]; maxTotalScore: number }
-  const { user } = Route.useRouteContext() as { user: { id: string; name: string; email: string | null; partnerType: string } }
-  
+  const initialData = Route.useLoaderData() as ConductInterviewResponse & { criteria: ScoringCriterion[], maxTotalScore: number }
+  const { user } = Route.useRouteContext() as { user: { id: string, name: string, email: string | null, partnerType: string } }
+
   const [session] = React.useState(initialData.session)
   const [questions] = React.useState(initialData.questions)
   const [criteria] = React.useState(initialData.criteria)
   const [maxTotalScore] = React.useState(initialData.maxTotalScore)
   const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0)
   const [responses, setResponses] = React.useState<ResponseData[]>([])
-  const [scores, setScores] = React.useState<Record<string, { score: string; comment: string }>>({})
+  const [scores, setScores] = React.useState<Record<string, { score: string, comment: string }>>({})
   const [result, setResult] = React.useState<InterviewResult | ''>('')
   const [totalScore, setTotalScore] = React.useState<string>('')
   const [notes, setNotes] = React.useState(session.notes || '')
@@ -72,12 +77,12 @@ function ConductInterviewComponent() {
   // Calculate total score and suggest result based on scores
   React.useEffect(() => {
     const calculatedTotal = Object.values(scores).reduce((sum, s) => {
-      const scoreValue = parseFloat(s.score) || 0
+      const scoreValue = Number.parseFloat(s.score) || 0
       return sum + scoreValue
     }, 0)
-    
+
     setTotalScore(calculatedTotal.toFixed(2))
-    
+
     // Auto-suggest result based on calculated score
     if (maxTotalScore > 0 && !result) {
       const suggestedResult = calculateInterviewResult(calculatedTotal, maxTotalScore)
@@ -102,22 +107,25 @@ function ConductInterviewComponent() {
   const totalQuestions = questions.length
 
   const handleResponseChange = (field: 'response_text' | 'selected_option_ids' | 'awarded_score', value: string | string[] | number) => {
-    setResponses(prev => {
+    setResponses((prev) => {
       const newResponses = [...prev]
       const currentResponse = { ...newResponses[currentQuestionIndex] }
-      
+
       if (field === 'response_text') {
         currentResponse.response_text = value as string
-      } else if (field === 'selected_option_ids') {
-        currentResponse.selected_option_ids = value as string[]
-      } else if (field === 'awarded_score') {
-        currentResponse.awarded_score = typeof value === 'number' ? value : parseFloat(value as string)
       }
-      
+      else if (field === 'selected_option_ids') {
+        currentResponse.selected_option_ids = value as string[]
+      }
+      else if (field === 'awarded_score') {
+        currentResponse.awarded_score = typeof value === 'number' ? value : Number.parseFloat(value as string)
+      }
+
       newResponses[currentQuestionIndex] = currentResponse
       return newResponses
     })
-    if (error) setError(null)
+    if (error)
+      setError(null)
   }
 
   const handleScoreChange = (criterionId: string, field: 'score' | 'comment', value: string) => {
@@ -128,11 +136,13 @@ function ConductInterviewComponent() {
         [field]: value,
       },
     }))
-    if (error) setError(null)
+    if (error)
+      setError(null)
   }
 
   const handleSaveScores = async () => {
-    if (criteria.length === 0) return
+    if (criteria.length === 0)
+      return
 
     setIsSubmitting(true)
     setError(null)
@@ -140,7 +150,7 @@ function ConductInterviewComponent() {
     try {
       const scoresToSave = Object.entries(scores).map(([criterionId, data]) => ({
         criterion_id: criterionId,
-        score: parseFloat(data.score) || 0,
+        score: Number.parseFloat(data.score) || 0,
         comment: data.comment || undefined,
       }))
 
@@ -159,16 +169,19 @@ function ConductInterviewComponent() {
       if (!result.success) {
         setError(result.error || 'Gagal menyimpan penilaian')
       }
-    } catch (err) {
+    }
+    catch (err) {
       console.error('Error saving scores:', err)
       setError('Terjadi kesalahan saat menyimpan penilaian')
-    } finally {
+    }
+    finally {
       setIsSubmitting(false)
     }
   }
 
   const handleSaveResponses = async () => {
-    if (!currentQuestion) return
+    if (!currentQuestion)
+      return
 
     setIsSubmitting(true)
     setError(null)
@@ -185,10 +198,12 @@ function ConductInterviewComponent() {
       if (!result.success) {
         setError(result.error || 'Gagal menyimpan jawaban')
       }
-    } catch (err) {
+    }
+    catch (err) {
       console.error('Error saving response:', err)
       setError('Terjadi kesalahan saat menyimpan jawaban')
-    } finally {
+    }
+    finally {
       setIsSubmitting(false)
     }
   }
@@ -197,7 +212,8 @@ function ConductInterviewComponent() {
     if (direction === 'prev' && currentQuestionIndex > 0) {
       handleSaveResponses()
       setCurrentQuestionIndex(prev => prev - 1)
-    } else if (direction === 'next' && currentQuestionIndex < totalQuestions - 1) {
+    }
+    else if (direction === 'next' && currentQuestionIndex < totalQuestions - 1) {
       handleSaveResponses()
       setCurrentQuestionIndex(prev => prev + 1)
     }
@@ -213,8 +229,8 @@ function ConductInterviewComponent() {
       const saveResult = await saveInterviewResponse({
         data: {
           interviewId: session.id,
-          responses: responses.filter(r => 
-            r.response_text || r.selected_option_ids?.length || r.awarded_score
+          responses: responses.filter(r =>
+            r.response_text || r.selected_option_ids?.length || r.awarded_score,
           ),
         },
       })
@@ -228,7 +244,7 @@ function ConductInterviewComponent() {
       if (criteria.length > 0) {
         const scoresToSave = Object.entries(scores).map(([criterionId, data]) => ({
           criterion_id: criterionId,
-          score: parseFloat(data.score) || 0,
+          score: Number.parseFloat(data.score) || 0,
           comment: data.comment || undefined,
         }))
 
@@ -253,7 +269,7 @@ function ConductInterviewComponent() {
           interviewId: session.id,
           completionData: {
             result: result as InterviewResult || undefined,
-            total_score: totalScore ? parseFloat(totalScore) : undefined,
+            total_score: totalScore ? Number.parseFloat(totalScore) : undefined,
             notes: notes || undefined,
           },
         },
@@ -268,10 +284,12 @@ function ConductInterviewComponent() {
       setTimeout(() => {
         window.location.href = '/interviews'
       }, 2000)
-    } catch (err) {
+    }
+    catch (err) {
       console.error('Error completing interview:', err)
       setError('Terjadi kesalahan saat menyelesaikan wawancara')
-    } finally {
+    }
+    finally {
       setIsSubmitting(false)
     }
   }
@@ -291,7 +309,7 @@ function ConductInterviewComponent() {
           <input
             type="text"
             value={response.response_text || ''}
-            onChange={(e) => handleResponseChange('response_text', e.target.value)}
+            onChange={e => handleResponseChange('response_text', e.target.value)}
             style={inputStyle}
             placeholder="Jawaban Anda"
             disabled={isSubmitting || success}
@@ -302,7 +320,7 @@ function ConductInterviewComponent() {
         return (
           <textarea
             value={response.response_text || ''}
-            onChange={(e) => handleResponseChange('response_text', e.target.value)}
+            onChange={e => handleResponseChange('response_text', e.target.value)}
             style={{ ...inputStyle, minHeight: '120px', resize: 'vertical' }}
             placeholder="Jawaban Anda"
             rows={5}
@@ -313,7 +331,7 @@ function ConductInterviewComponent() {
       case 'single_choice':
         return (
           <div style={radioGroupStyle}>
-            {question.question_options.map((option) => (
+            {question.question_options.map(option => (
               <label
                 key={option.id}
                 style={{
@@ -326,13 +344,18 @@ function ConductInterviewComponent() {
                   name={`question_${question.id}`}
                   value={option.id}
                   checked={response.selected_option_ids?.includes(option.id) || false}
-                  onChange={(e) => handleResponseChange('selected_option_ids', [e.target.value])}
+                  onChange={e => handleResponseChange('selected_option_ids', [e.target.value])}
                   disabled={isSubmitting || success}
                   style={{ cursor: 'pointer' }}
                 />
                 <span>{option.option_label}</span>
                 {Number(option.score_value) > 0 && (
-                  <span style={scoreBadgeStyle}>({Number(option.score_value)} poin)</span>
+                  <span style={scoreBadgeStyle}>
+                    (
+                    {Number(option.score_value)}
+                    {' '}
+                    poin)
+                  </span>
                 )}
               </label>
             ))}
@@ -342,7 +365,7 @@ function ConductInterviewComponent() {
       case 'multiple_choice':
         return (
           <div style={checkboxGroupStyle}>
-            {question.question_options.map((option) => (
+            {question.question_options.map(option => (
               <label
                 key={option.id}
                 style={{
@@ -366,7 +389,12 @@ function ConductInterviewComponent() {
                 />
                 <span>{option.option_label}</span>
                 {Number(option.score_value) > 0 && (
-                  <span style={scoreBadgeStyle}>({Number(option.score_value)} poin)</span>
+                  <span style={scoreBadgeStyle}>
+                    (
+                    {Number(option.score_value)}
+                    {' '}
+                    poin)
+                  </span>
                 )}
               </label>
             ))}
@@ -376,7 +404,7 @@ function ConductInterviewComponent() {
       case 'rating':
         return (
           <div style={ratingGroupStyle}>
-            {[1, 2, 3, 4, 5].map((rating) => (
+            {[1, 2, 3, 4, 5].map(rating => (
               <button
                 key={rating}
                 type="button"
@@ -398,7 +426,7 @@ function ConductInterviewComponent() {
           <input
             type="date"
             value={response.response_text || ''}
-            onChange={(e) => handleResponseChange('response_text', e.target.value)}
+            onChange={e => handleResponseChange('response_text', e.target.value)}
             style={inputStyle}
             disabled={isSubmitting || success}
           />
@@ -418,7 +446,7 @@ function ConductInterviewComponent() {
                 name={`question_${question.id}_boolean`}
                 value="true"
                 checked={response.response_text === 'true'}
-                onChange={(e) => handleResponseChange('response_text', e.target.value)}
+                onChange={e => handleResponseChange('response_text', e.target.value)}
                 disabled={isSubmitting || success}
                 style={{ cursor: 'pointer' }}
               />
@@ -435,7 +463,7 @@ function ConductInterviewComponent() {
                 name={`question_${question.id}_boolean`}
                 value="false"
                 checked={response.response_text === 'false'}
-                onChange={(e) => handleResponseChange('response_text', e.target.value)}
+                onChange={e => handleResponseChange('response_text', e.target.value)}
                 disabled={isSubmitting || success}
                 style={{ cursor: 'pointer' }}
               />
@@ -449,7 +477,7 @@ function ConductInterviewComponent() {
           <input
             type="text"
             value={response.response_text || ''}
-            onChange={(e) => handleResponseChange('response_text', e.target.value)}
+            onChange={e => handleResponseChange('response_text', e.target.value)}
             style={inputStyle}
             placeholder="Jawaban Anda"
             disabled={isSubmitting || success}
@@ -757,13 +785,15 @@ function ConductInterviewComponent() {
 
   return (
     <div style={containerStyle}>
-      <style>{`
+      <style>
+        {`
         @media (min-width: 640px) {
           .info-grid {
             grid-template-columns: repeat(2, 1fr) !important;
           }
         }
-      `}</style>
+      `}
+      </style>
 
       <div style={headerStyle}>
         <h1 style={titleStyle}>Lakukan Wawancara</h1>
@@ -825,7 +855,13 @@ function ConductInterviewComponent() {
               <div style={progressBarStyle} />
             </div>
             <div style={progressTextStyle}>
-              Pertanyaan {currentQuestionIndex + 1} dari {totalQuestions}
+              Pertanyaan
+              {' '}
+              {currentQuestionIndex + 1}
+              {' '}
+              dari
+              {' '}
+              {totalQuestions}
             </div>
           </div>
 
@@ -835,7 +871,9 @@ function ConductInterviewComponent() {
               <div style={questionHeaderStyle}>
                 {currentQuestion.section_title && (
                   <div style={questionMetaStyle}>
-                    Bagian: {currentQuestion.section_title}
+                    Bagian:
+                    {' '}
+                    {currentQuestion.section_title}
                   </div>
                 )}
                 <div style={questionPromptStyle}>
@@ -863,23 +901,25 @@ function ConductInterviewComponent() {
                   ← Sebelumnya
                 </button>
 
-                {currentQuestionIndex === totalQuestions - 1 ? (
-                  <button
-                    onClick={() => document.getElementById('final-section')?.scrollIntoView({ behavior: 'smooth' })}
-                    style={primaryButtonStyle}
-                    disabled={isSubmitting}
-                  >
-                    Lanjut ke Penilaian →
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleNavigate('next')}
-                    style={primaryButtonStyle}
-                    disabled={isSubmitting}
-                  >
-                    Berikutnya →
-                  </button>
-                )}
+                {currentQuestionIndex === totalQuestions - 1
+                  ? (
+                      <button
+                        onClick={() => document.getElementById('final-section')?.scrollIntoView({ behavior: 'smooth' })}
+                        style={primaryButtonStyle}
+                        disabled={isSubmitting}
+                      >
+                        Lanjut ke Penilaian →
+                      </button>
+                    )
+                  : (
+                      <button
+                        onClick={() => handleNavigate('next')}
+                        style={primaryButtonStyle}
+                        disabled={isSubmitting}
+                      >
+                        Berikutnya →
+                      </button>
+                    )}
               </div>
             </div>
           )}
@@ -895,7 +935,7 @@ function ConductInterviewComponent() {
                   Kriteria Penilaian
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {criteria.map((criterion) => (
+                  {criteria.map(criterion => (
                     <div key={criterion.id} style={{ padding: '1rem', border: '1px solid #e5e7eb', borderRadius: '0.5rem' }}>
                       <div style={{ marginBottom: '0.75rem' }}>
                         <div style={{ fontWeight: 600, color: '#111827', marginBottom: '0.25rem' }}>
@@ -907,7 +947,9 @@ function ConductInterviewComponent() {
                           </div>
                         )}
                         <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem' }}>
-                          Skor Maksimal: {criterion.max_score}
+                          Skor Maksimal:
+                          {' '}
+                          {criterion.max_score}
                         </div>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', alignItems: 'start' }}>
@@ -919,7 +961,7 @@ function ConductInterviewComponent() {
                             type="number"
                             id={`score_${criterion.id}`}
                             value={scores[criterion.id]?.score || ''}
-                            onChange={(e) => handleScoreChange(criterion.id, 'score', e.target.value)}
+                            onChange={e => handleScoreChange(criterion.id, 'score', e.target.value)}
                             style={inputStyle}
                             placeholder="0"
                             step="0.01"
@@ -936,7 +978,7 @@ function ConductInterviewComponent() {
                             type="text"
                             id={`comment_${criterion.id}`}
                             value={scores[criterion.id]?.comment || ''}
-                            onChange={(e) => handleScoreChange(criterion.id, 'comment', e.target.value)}
+                            onChange={e => handleScoreChange(criterion.id, 'comment', e.target.value)}
                             style={inputStyle}
                             placeholder="Catatan untuk kriteria ini"
                             disabled={isSubmitting || success}
@@ -952,17 +994,23 @@ function ConductInterviewComponent() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ fontWeight: 600, color: '#374151' }}>Total Skor</div>
                     <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#2563eb' }}>
-                      {totalScore || '0'} / {maxTotalScore}
+                      {totalScore || '0'}
+                      {' '}
+                      /
+                      {maxTotalScore}
                     </div>
                   </div>
                   {totalScore && maxTotalScore > 0 && (
                     <div style={{ marginTop: '0.5rem', textAlign: 'right', fontSize: '0.875rem', color: '#6b7280' }}>
-                      {((parseFloat(totalScore) / maxTotalScore) * 100).toFixed(1)}% dari skor maksimal
+                      {((Number.parseFloat(totalScore) / maxTotalScore) * 100).toFixed(1)}
+                      % dari skor maksimal
                     </div>
                   )}
                   {totalScore && maxTotalScore > 0 && !result && (
                     <div style={{ marginTop: '0.5rem', textAlign: 'right', fontSize: '0.875rem', color: '#16a34a', fontWeight: 500 }}>
-                      Hasil yang disarankan: {INTERVIEW_RESULT_LABELS[calculateInterviewResult(parseFloat(totalScore), maxTotalScore)]}
+                      Hasil yang disarankan:
+                      {' '}
+                      {INTERVIEW_RESULT_LABELS[calculateInterviewResult(Number.parseFloat(totalScore), maxTotalScore)]}
                     </div>
                   )}
                 </div>
@@ -974,7 +1022,7 @@ function ConductInterviewComponent() {
               <select
                 id="result"
                 value={result}
-                onChange={(e) => setResult(e.target.value as InterviewResult | '')}
+                onChange={e => setResult(e.target.value as InterviewResult | '')}
                 style={selectStyle}
                 disabled={isSubmitting || success}
               >
@@ -991,7 +1039,7 @@ function ConductInterviewComponent() {
                 type="number"
                 id="totalScore"
                 value={totalScore}
-                onChange={(e) => setTotalScore(e.target.value)}
+                onChange={e => setTotalScore(e.target.value)}
                 style={inputStyle}
                 placeholder="Masukkan total skor"
                 step="0.01"
@@ -1005,7 +1053,7 @@ function ConductInterviewComponent() {
               <textarea
                 id="finalNotes"
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                onChange={e => setNotes(e.target.value)}
                 style={textareaStyle}
                 placeholder="Catatan tambahan untuk wawancara ini"
                 rows={4}

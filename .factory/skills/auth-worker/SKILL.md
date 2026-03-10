@@ -52,28 +52,30 @@ Implement in this order:
 Session implementation pattern:
 ```typescript
 // app/server/session.ts
-import { getCookie, setCookie, deleteCookie } from '@tanstack/react-start/server';
-import { sign, verify } from 'jsonwebtoken';
+import { deleteCookie, getCookie, setCookie } from '@tanstack/react-start/server'
+import { sign, verify } from 'jsonwebtoken'
 
-const SESSION_SECRET = process.env.SESSION_SECRET!;
+const SESSION_SECRET = process.env.SESSION_SECRET!
 
 export async function createSession(userId: string) {
-  const token = sign({ userId }, SESSION_SECRET, { expiresIn: '7d' });
-  setCookie('session', token, { httpOnly: true, secure: true, maxAge: 60 * 60 * 24 * 7 });
+  const token = sign({ userId }, SESSION_SECRET, { expiresIn: '7d' })
+  setCookie('session', token, { httpOnly: true, secure: true, maxAge: 60 * 60 * 24 * 7 })
 }
 
 export async function getSession() {
-  const token = getCookie('session');
-  if (!token) return null;
+  const token = getCookie('session')
+  if (!token)
+    return null
   try {
-    return verify(token, SESSION_SECRET) as { userId: string };
-  } catch {
-    return null;
+    return verify(token, SESSION_SECRET) as { userId: string }
+  }
+  catch {
+    return null
   }
 }
 
 export async function destroySession() {
-  deleteCookie('session');
+  deleteCookie('session')
 }
 ```
 
@@ -117,10 +119,13 @@ export async function destroySession() {
   },
   "tests": {
     "added": [
-      { "file": "app/server/auth.test.ts", "cases": [
-        { "name": "login with valid credentials", "verifies": "Creates session and returns user" },
-        { "name": "login with invalid credentials", "verifies": "Returns error without creating session" }
-      ]}
+      {
+        "file": "app/server/auth.test.ts",
+        "cases": [
+          { "name": "login with valid credentials", "verifies": "Creates session and returns user" },
+          { "name": "login with invalid credentials", "verifies": "Returns error without creating session" }
+        ]
+      }
     ]
   },
   "discoveredIssues": []

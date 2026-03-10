@@ -1,6 +1,7 @@
-import * as React from 'react'
+import type { PartnerType, ValidationError } from '../server/partners'
 import { createFileRoute } from '@tanstack/react-router'
-import { createPartner, type PartnerType, PARTNER_TYPES, PARTNER_TYPE_LABELS, type ValidationError } from '../server/partners'
+import * as React from 'react'
+import { createPartner, PARTNER_TYPE_LABELS, PARTNER_TYPES } from '../server/partners'
 
 export const Route = createFileRoute('/partners/new')({
   component: CreatePartnerComponent,
@@ -46,7 +47,7 @@ function CreatePartnerComponent() {
   const handleChange = (field: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     if (errors[field]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev }
         delete newErrors[field]
         return newErrors
@@ -66,7 +67,7 @@ function CreatePartnerComponent() {
       newErrors.partner_type = 'Tipe mitra wajib dipilih'
     }
     if (formData.email.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      const emailRegex = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/
       if (!emailRegex.test(formData.email)) {
         newErrors.email = 'Format email tidak valid'
       }
@@ -80,7 +81,8 @@ function CreatePartnerComponent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!validateForm()) return
+    if (!validateForm())
+      return
 
     setIsSubmitting(true)
     setSubmitError(null)
@@ -106,17 +108,20 @@ function CreatePartnerComponent() {
         setTimeout(() => {
           window.location.href = '/partners'
         }, 1500)
-      } else if (result.errors) {
+      }
+      else if (result.errors) {
         const fieldErrors: Record<string, string> = {}
         result.errors.forEach((err: ValidationError) => {
           fieldErrors[err.field] = err.message
         })
         setErrors(fieldErrors)
       }
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error creating partner:', error)
       setSubmitError('Terjadi kesalahan saat menyimpan data. Silakan coba lagi.')
-    } finally {
+    }
+    finally {
       setIsSubmitting(false)
     }
   }
@@ -293,13 +298,15 @@ function CreatePartnerComponent() {
 
   return (
     <div style={containerStyle}>
-      <style>{`
+      <style>
+        {`
         @media (min-width: 640px) {
           .form-grid {
             grid-template-columns: repeat(2, 1fr) !important;
           }
         }
-      `}</style>
+      `}
+      </style>
 
       <div style={headerStyle}>
         <h1 style={titleStyle}>Tambah Mitra Baru</h1>
@@ -320,13 +327,14 @@ function CreatePartnerComponent() {
           <div className="form-grid" style={formGridStyle}>
             <div style={formGroupStyle}>
               <label htmlFor="full_name" style={labelStyle}>
-                Nama Lengkap<span style={requiredMarkStyle}>*</span>
+                Nama Lengkap
+                <span style={requiredMarkStyle}>*</span>
               </label>
               <input
                 type="text"
                 id="full_name"
                 value={formData.full_name}
-                onChange={(e) => handleChange('full_name', e.target.value)}
+                onChange={e => handleChange('full_name', e.target.value)}
                 style={{ ...inputStyle, ...(errors.full_name ? inputErrorStyle : {}) }}
                 placeholder="Masukkan nama lengkap"
                 disabled={isSubmitting || submitSuccess}
@@ -336,17 +344,18 @@ function CreatePartnerComponent() {
 
             <div style={formGroupStyle}>
               <label htmlFor="partner_type" style={labelStyle}>
-                Tipe Mitra<span style={requiredMarkStyle}>*</span>
+                Tipe Mitra
+                <span style={requiredMarkStyle}>*</span>
               </label>
               <select
                 id="partner_type"
                 value={formData.partner_type}
-                onChange={(e) => handleChange('partner_type', e.target.value as PartnerType)}
+                onChange={e => handleChange('partner_type', e.target.value as PartnerType)}
                 style={{ ...selectStyle, ...(errors.partner_type ? inputErrorStyle : {}) }}
                 disabled={isSubmitting || submitSuccess}
               >
                 <option value="">Pilih Tipe Mitra</option>
-                {PARTNER_TYPES.map((type) => (
+                {PARTNER_TYPES.map(type => (
                   <option key={type} value={type}>{PARTNER_TYPE_LABELS[type]}</option>
                 ))}
               </select>
@@ -359,7 +368,7 @@ function CreatePartnerComponent() {
                 type="email"
                 id="email"
                 value={formData.email}
-                onChange={(e) => handleChange('email', e.target.value)}
+                onChange={e => handleChange('email', e.target.value)}
                 style={{ ...inputStyle, ...(errors.email ? inputErrorStyle : {}) }}
                 placeholder="email@contoh.com"
                 disabled={isSubmitting || submitSuccess}
@@ -373,7 +382,7 @@ function CreatePartnerComponent() {
                 type="tel"
                 id="phone"
                 value={formData.phone}
-                onChange={(e) => handleChange('phone', e.target.value)}
+                onChange={e => handleChange('phone', e.target.value)}
                 style={{ ...inputStyle, ...(errors.phone ? inputErrorStyle : {}) }}
                 placeholder="08123456789"
                 disabled={isSubmitting || submitSuccess}
@@ -387,7 +396,7 @@ function CreatePartnerComponent() {
                 type="text"
                 id="domicile_city"
                 value={formData.domicile_city}
-                onChange={(e) => handleChange('domicile_city', e.target.value)}
+                onChange={e => handleChange('domicile_city', e.target.value)}
                 style={inputStyle}
                 placeholder="Nama kota"
                 disabled={isSubmitting || submitSuccess}
@@ -400,7 +409,7 @@ function CreatePartnerComponent() {
                 type="text"
                 id="domicile_province"
                 value={formData.domicile_province}
-                onChange={(e) => handleChange('domicile_province', e.target.value)}
+                onChange={e => handleChange('domicile_province', e.target.value)}
                 style={inputStyle}
                 placeholder="Nama provinsi"
                 disabled={isSubmitting || submitSuccess}
@@ -413,7 +422,7 @@ function CreatePartnerComponent() {
                 type="text"
                 id="experience_level"
                 value={formData.experience_level}
-                onChange={(e) => handleChange('experience_level', e.target.value)}
+                onChange={e => handleChange('experience_level', e.target.value)}
                 style={inputStyle}
                 placeholder="Contoh: Junior, Senior, Expert"
                 disabled={isSubmitting || submitSuccess}
@@ -426,7 +435,7 @@ function CreatePartnerComponent() {
                 <input
                   type="checkbox"
                   checked={formData.is_active}
-                  onChange={(e) => handleChange('is_active', e.target.checked)}
+                  onChange={e => handleChange('is_active', e.target.checked)}
                   style={checkboxStyle}
                   disabled={isSubmitting || submitSuccess}
                 />
@@ -444,7 +453,7 @@ function CreatePartnerComponent() {
             <textarea
               id="notes"
               value={formData.notes}
-              onChange={(e) => handleChange('notes', e.target.value)}
+              onChange={e => handleChange('notes', e.target.value)}
               style={textareaStyle}
               placeholder="Tambahkan catatan tentang mitra ini (opsional)"
               rows={4}

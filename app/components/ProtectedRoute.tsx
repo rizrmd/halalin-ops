@@ -1,5 +1,5 @@
+import { useLocation, useNavigate } from '@tanstack/react-router'
 import * as React from 'react'
-import { useNavigate, useLocation } from '@tanstack/react-router'
 import { getAuthUser } from '../server/auth'
 
 interface ProtectedRouteProps {
@@ -28,13 +28,15 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           // Use window.location for external navigation to bypass type checking
           window.location.href = `/login?redirectTo=${redirectTo}`
         }
-      } catch (error) {
+      }
+      catch (error) {
         console.error('Auth check failed:', error)
         setIsAuthenticated(false)
         const currentPath = location.pathname + location.search
         const redirectTo = encodeURIComponent(currentPath)
         window.location.href = `/login?redirectTo=${redirectTo}`
-      } finally {
+      }
+      finally {
         setIsLoading(false)
       }
     }

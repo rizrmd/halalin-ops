@@ -45,19 +45,19 @@ public/               # Static assets
 Use `createServerFn` for all server-side operations:
 
 ```typescript
-import { createServerFn } from '@tanstack/react-start';
+import { createServerFn } from '@tanstack/react-start'
 
 export const getData = createServerFn({ method: 'GET' })
   .handler(async () => {
     // Server-side code
-  });
+  })
 ```
 
 ### Prisma Client Singleton
 Always use the singleton from `app/server/db.ts`:
 
 ```typescript
-import { prisma } from '~/server/db';
+import { prisma } from '~/server/db'
 ```
 
 ### Route Loaders
@@ -67,9 +67,9 @@ Fetch data on load using route loaders:
 export const Route = createFileRoute('/partners')({
   component: PartnersPage,
   loader: async () => {
-    return await getPartners();
+    return await getPartners()
   },
-});
+})
 ```
 
 ### Indonesian UI Labels
@@ -85,14 +85,14 @@ All user-facing text should be in Indonesian:
 Use TanStack Router's `useRouter` hook for navigation instead of `window.location.href` to avoid full page reloads:
 
 ```typescript
-import { useRouter } from '@tanstack/react-router';
+import { useRouter } from '@tanstack/react-router'
 
 function MyComponent() {
-  const router = useRouter();
-  
+  const router = useRouter()
+
   const handleNavigate = () => {
-    router.navigate({ to: '/partners' });
-  };
+    router.navigate({ to: '/partners' })
+  }
 }
 ```
 
@@ -112,10 +112,10 @@ For data tables with mobile support:
 Server-side pagination with Prisma:
 
 ```typescript
-const skip = (page - 1) * pageSize;
+const skip = (page - 1) * pageSize
 const [partners, total] = await Promise.all([
   prisma.partners.findMany({ skip, take: pageSize }),
   prisma.partners.count()
-]);
-const totalPages = Math.ceil(total / pageSize);
+])
+const totalPages = Math.ceil(total / pageSize)
 ```

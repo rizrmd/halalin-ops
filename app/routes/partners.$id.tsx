@@ -1,5 +1,5 @@
-import * as React from 'react'
 import { createFileRoute } from '@tanstack/react-router'
+import * as React from 'react'
 import { getPartnerById } from '../server/partners'
 
 // Type for partner detail from Prisma
@@ -30,7 +30,8 @@ export const Route = createFileRoute('/partners/$id')({
     try {
       const partner = await getPartnerById({ data: { id: params.id } })
       return partner as PartnerDetail
-    } catch (error) {
+    }
+    catch (error) {
       // If partner not found, throw 404
       throw new Error('PARTNER_NOT_FOUND')
     }
@@ -318,31 +319,35 @@ function PartnerDetailComponent() {
           {/* Email */}
           <div style={fieldStyle}>
             <label style={labelStyle}>Email</label>
-            {partner.email ? (
-              <a
-                href={`mailto:${partner.email}`}
-                style={{ ...valueStyle, color: '#2563eb', textDecoration: 'none' }}
-              >
-                {partner.email}
-              </a>
-            ) : (
-              <span style={valueMutedStyle}>-</span>
-            )}
+            {partner.email
+              ? (
+                  <a
+                    href={`mailto:${partner.email}`}
+                    style={{ ...valueStyle, color: '#2563eb', textDecoration: 'none' }}
+                  >
+                    {partner.email}
+                  </a>
+                )
+              : (
+                  <span style={valueMutedStyle}>-</span>
+                )}
           </div>
 
           {/* Telepon */}
           <div style={fieldStyle}>
             <label style={labelStyle}>Telepon</label>
-            {partner.phone ? (
-              <a
-                href={`tel:${partner.phone}`}
-                style={{ ...valueStyle, color: '#2563eb', textDecoration: 'none' }}
-              >
-                {partner.phone}
-              </a>
-            ) : (
-              <span style={valueMutedStyle}>-</span>
-            )}
+            {partner.phone
+              ? (
+                  <a
+                    href={`tel:${partner.phone}`}
+                    style={{ ...valueStyle, color: '#2563eb', textDecoration: 'none' }}
+                  >
+                    {partner.phone}
+                  </a>
+                )
+              : (
+                  <span style={valueMutedStyle}>-</span>
+                )}
           </div>
 
           {/* Tipe Mitra */}
@@ -400,11 +405,13 @@ function PartnerDetailComponent() {
         {/* Catatan */}
         <div style={{ marginTop: '1.5rem' }}>
           <label style={labelStyle}>Catatan</label>
-          {partner.notes ? (
-            <div style={notesStyle}>{partner.notes}</div>
-          ) : (
-            <div style={notesEmptyStyle}>Tidak ada catatan</div>
-          )}
+          {partner.notes
+            ? (
+                <div style={notesStyle}>{partner.notes}</div>
+              )
+            : (
+                <div style={notesEmptyStyle}>Tidak ada catatan</div>
+              )}
         </div>
       </div>
     </div>

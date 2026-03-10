@@ -1,9 +1,8 @@
-import { describe, it, expect } from 'vitest'
-
 // Import for type checking only
-import type { SessionData } from './session'
 
-describe('Session Management', () => {
+import { describe, expect, it } from 'vitest'
+
+describe('session Management', () => {
   describe('validateSessionConfig', () => {
     it('should validate SESSION_SECRET configuration', async () => {
       // Test that the session module can be imported

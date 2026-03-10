@@ -1,11 +1,11 @@
-import * as React from 'react'
+import type { InterviewScoresResponse, ScoreEntryWithCriterion } from '../server/interviews'
 import { createFileRoute } from '@tanstack/react-router'
+import * as React from 'react'
 import {
-  getInterviewScores,
   getConductInterview,
-  type InterviewScoresResponse,
-  type ScoreEntryWithCriterion,
+  getInterviewScores,
   INTERVIEW_RESULT_LABELS,
+
 } from '../server/interviews'
 
 interface LoaderData extends InterviewScoresResponse {
@@ -33,7 +33,7 @@ export const Route = createFileRoute('/interviews/$id')({
   loader: async ({ params }): Promise<LoaderData> => {
     const scoresData = await getInterviewScores({ data: { interviewId: params.id } })
     const conductData = await getConductInterview({ data: { interviewId: params.id } })
-    
+
     return {
       ...scoresData,
       session: {
@@ -52,7 +52,8 @@ export const Route = createFileRoute('/interviews/$id')({
 })
 
 function getResultBadgeColor(result: string | null): string {
-  if (!result) return '#6b7280'
+  if (!result)
+    return '#6b7280'
   const colorMap: Record<string, string> = {
     priority_deploy: '#16a34a',
     talent_pool: '#2563eb',
@@ -67,7 +68,8 @@ function getResultBadgeColor(result: string | null): string {
 }
 
 function getResultTextColor(result: string | null): string {
-  if (!result) return '#6b7280'
+  if (!result)
+    return '#6b7280'
   const colorMap: Record<string, string> = {
     priority_deploy: '#166534',
     talent_pool: '#1e40af',
@@ -81,9 +83,10 @@ function getResultTextColor(result: string | null): string {
   return colorMap[result] || '#6b7280'
 }
 
-function getModeBadgeStyle(mode: string | null): { backgroundColor: string; color: string } {
-  if (!mode) return { backgroundColor: '#e5e7eb', color: '#6b7280' }
-  const colorMap: Record<string, { backgroundColor: string; color: string }> = {
+function getModeBadgeStyle(mode: string | null): { backgroundColor: string, color: string } {
+  if (!mode)
+    return { backgroundColor: '#e5e7eb', color: '#6b7280' }
+  const colorMap: Record<string, { backgroundColor: string, color: string }> = {
     onsite: { backgroundColor: '#dbeafe', color: '#1e40af' },
     online: { backgroundColor: '#dcfce7', color: '#166534' },
     hybrid: { backgroundColor: '#fef3c7', color: '#92400e' },
@@ -233,13 +236,15 @@ function InterviewDetailComponent() {
 
   return (
     <div style={containerStyle}>
-      <style>{`
+      <style>
+        {`
         @media (min-width: 640px) {
           .info-grid {
             grid-template-columns: repeat(2, 1fr) !important;
           }
         }
-      `}</style>
+      `}
+      </style>
 
       <div style={headerStyle}>
         <a href="/interviews" style={backButtonStyle}>
@@ -266,8 +271,9 @@ function InterviewDetailComponent() {
               {session.interview_mode && (
                 <span style={badgeStyle(
                   getModeBadgeStyle(session.interview_mode).backgroundColor,
-                  getModeBadgeStyle(session.interview_mode).color
-                )}>
+                  getModeBadgeStyle(session.interview_mode).color,
+                )}
+                >
                   {session.interview_mode}
                 </span>
               )}
@@ -290,10 +296,13 @@ function InterviewDetailComponent() {
       {/* Score Summary */}
       <div style={cardStyle}>
         <h2 style={sectionTitleStyle}>Hasil Penilaian</h2>
-        
+
         <div style={scoreSummaryStyle}>
           <div style={scoreNumberStyle}>
-            {totalScore.toFixed(2)} / {maxTotalScore}
+            {totalScore.toFixed(2)}
+            {' '}
+            /
+            {maxTotalScore}
           </div>
           <div style={scoreLabelStyle}>
             {maxTotalScore > 0 ? `${percentage.toFixed(1)}% dari skor maksimal` : 'Belum ada penilaian'}
@@ -319,29 +328,35 @@ function InterviewDetailComponent() {
             {entries.map((entry: ScoreEntryWithCriterion) => {
               const percentageScore = entry.max_score > 0 ? (entry.score / entry.max_score) * 100 : 0
               const scoreColor = percentageScore >= 70 ? '#16a34a' : percentageScore >= 50 ? '#f59e0b' : '#dc2626'
-              
+
               return (
                 <div key={entry.id} style={criterionCardStyle}>
                   <div style={criterionHeaderStyle}>
                     <div style={criterionNameStyle}>{entry.criterion_name}</div>
                     <div style={criterionScoreStyle}>
                       <span style={{ color: scoreColor }}>{entry.score.toFixed(2)}</span>
-                      <span style={{ color: '#9ca3af', fontSize: '0.875rem' }}> / {entry.max_score}</span>
+                      <span style={{ color: '#9ca3af', fontSize: '0.875rem' }}>
+                        {' '}
+                        /
+                        {entry.max_score}
+                      </span>
                     </div>
                   </div>
                   {entry.comment && (
                     <div style={{ fontSize: '0.875rem', color: '#6b7280', fontStyle: 'italic' }}>
-                      "{entry.comment}"
+                      "
+                      {entry.comment}
+                      "
                     </div>
                   )}
                   <div style={{ marginTop: '0.5rem', height: '4px', backgroundColor: '#e5e7eb', borderRadius: '2px', overflow: 'hidden' }}>
-                    <div 
-                      style={{ 
-                        height: '100%', 
+                    <div
+                      style={{
+                        height: '100%',
                         width: `${percentageScore}%`,
                         backgroundColor: scoreColor,
-                        transition: 'width 0.3s ease'
-                      }} 
+                        transition: 'width 0.3s ease',
+                      }}
                     />
                   </div>
                 </div>

@@ -1,7 +1,7 @@
+import { randomBytes } from 'node:crypto'
+import { Decimal } from '@prisma/client/runtime/library'
 import { createServerFn } from '@tanstack/react-start'
 import { prisma } from './db'
-import { randomBytes } from 'crypto'
-import { Decimal } from '@prisma/client/runtime/library'
 
 /**
  * Question type enum values from schema.prisma
@@ -112,7 +112,7 @@ export const ASSESSMENT_STATUS_LABELS: Record<string, string> = {
  * Get assessments list with pagination
  */
 export const getAssessments = createServerFn({ method: 'GET' })
-  .inputValidator((data: unknown): { page: number; pageSize: number } => {
+  .inputValidator((data: unknown): { page: number, pageSize: number } => {
     if (typeof data !== 'object' || data === null) {
       return { page: 1, pageSize: 20 }
     }
@@ -124,10 +124,10 @@ export const getAssessments = createServerFn({ method: 'GET' })
   .handler(async ({ data }): Promise<AssessmentsResponse> => {
     const { page, pageSize } = data
     const skip = (page - 1) * pageSize
-    
+
     // Get total count for pagination
     const totalCount = await prisma.assessment_attempts.count()
-    
+
     // Get paginated assessment attempts with related data
     const attempts = await prisma.assessment_attempts.findMany({
       select: {
@@ -158,20 +158,22 @@ export const getAssessments = createServerFn({ method: 'GET' })
       skip,
       take: pageSize,
     })
-    
+
     // Transform to assessment list items
     const assessments: AssessmentListItem[] = attempts.map((attempt) => {
       // Determine status based on dates and result
       let status: 'not_started' | 'in_progress' | 'submitted' | 'reviewed' = 'not_started'
-      
+
       if (attempt.started_at && !attempt.submitted_at) {
         status = 'in_progress'
-      } else if (attempt.submitted_at && !attempt.competency_result) {
+      }
+      else if (attempt.submitted_at && !attempt.competency_result) {
         status = 'submitted'
-      } else if (attempt.competency_result) {
+      }
+      else if (attempt.competency_result) {
         status = 'reviewed'
       }
-      
+
       return {
         id: attempt.id,
         participant_name: attempt.partners_assessment_attempts_participant_idTopartners.full_name,
@@ -187,9 +189,9 @@ export const getAssessments = createServerFn({ method: 'GET' })
         status,
       }
     })
-    
+
     const totalPages = Math.ceil(totalCount / pageSize)
-    
+
     return { assessments, totalCount, totalPages, currentPage: page, pageSize }
   })
 
@@ -236,13 +238,13 @@ export const getAssessmentFormOptions = createServerFn({ method: 'GET' })
     })
 
     return {
-      participants: participants.map((p) => ({
+      participants: participants.map(p => ({
         id: p.id,
         full_name: p.full_name,
         email: p.email,
         partner_type: p.partner_type,
       })),
-      questionBanks: questionBanks.map((qb) => ({
+      questionBanks: questionBanks.map(qb => ({
         id: qb.id,
         title: qb.title,
         description: qb.description,
@@ -255,7 +257,7 @@ export const getAssessmentFormOptions = createServerFn({ method: 'GET' })
  * Create a new assessment attempt
  */
 export const createAssessment = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown): { participant_id: string; bank_id: string } => {
+  .inputValidator((data: unknown): { participant_id: string, bank_id: string } => {
     if (typeof data !== 'object' || data === null) {
       throw new Error('Invalid input data')
     }
@@ -292,7 +294,8 @@ export const createAssessment = createServerFn({ method: 'POST' })
         success: true,
         assessmentId: assessment.id,
       }
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error creating assessment:', error)
       return {
         success: false,
@@ -500,7 +503,7 @@ export const getTakeAssessment = createServerFn({ method: 'GET' })
  * Save a response for a question in assessment
  */
 export const saveAssessmentResponse = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown): { attemptId: string; responses: SaveAssessmentResponseInput[] } => {
+  .inputValidator((data: unknown): { attemptId: string, responses: SaveAssessmentResponseInput[] } => {
     if (typeof data !== 'object' || data === null) {
       throw new Error('Invalid input')
     }
@@ -509,7 +512,7 @@ export const saveAssessmentResponse = createServerFn({ method: 'POST' })
       throw new Error('Attempt ID is required')
     }
     if (!Array.isArray(responses)) {
-      throw new Error('Responses must be an array')
+      throw new TypeError('Responses must be an array')
     }
     return { attemptId, responses: responses as SaveAssessmentResponseInput[] }
   })
@@ -557,7 +560,8 @@ export const saveAssessmentResponse = createServerFn({ method: 'POST' })
               awarded_score: response.awarded_score !== undefined && response.awarded_score !== null ? new Decimal(response.awarded_score) : undefined,
             },
           })
-        } else {
+        }
+        else {
           // Create new response
           await prisma.assessment_responses.create({
             data: {
@@ -572,7 +576,8 @@ export const saveAssessmentResponse = createServerFn({ method: 'POST' })
       }
 
       return { success: true }
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error saving assessment responses:', error)
       return { success: false, error: 'Failed to save responses' }
     }
@@ -582,7 +587,7 @@ export const saveAssessmentResponse = createServerFn({ method: 'POST' })
  * Submit/finalize an assessment attempt
  */
 export const submitAssessment = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown): { attemptId: string; responses?: SaveAssessmentResponseInput[] } => {
+  .inputValidator((data: unknown): { attemptId: string, responses?: SaveAssessmentResponseInput[] } => {
     if (typeof data !== 'object' || data === null) {
       throw new Error('Invalid input')
     }
@@ -599,8 +604,8 @@ export const submitAssessment = createServerFn({ method: 'POST' })
       // Verify attempt exists
       const attempt = await prisma.assessment_attempts.findUnique({
         where: { id: attemptId },
-        select: { 
-          id: true, 
+        select: {
+          id: true,
           submitted_at: true,
           bank_id: true,
         },
@@ -658,11 +663,12 @@ export const submitAssessment = createServerFn({ method: 'POST' })
       for (const response of savedResponses) {
         const questionType = response.questions?.question_type
         const weight = Number(response.questions?.weight || 1)
-        
+
         if (questionType === 'short_text' || questionType === 'long_text') {
           // Essay questions - score will be manually assigned later
           essayScore += Number(response.awarded_score || 0) * weight
-        } else {
+        }
+        else {
           // Objective questions (single_choice, multiple_choice, rating, date, boolean)
           // Calculate score based on correct answers
           if (response.selected_option_id && response.question_options) {
@@ -695,7 +701,8 @@ export const submitAssessment = createServerFn({ method: 'POST' })
         objectiveScore,
         essayScore,
       }
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error submitting assessment:', error)
       return { success: false, error: 'Failed to submit assessment' }
     }
@@ -837,7 +844,7 @@ export const getAssessmentResults = createServerFn({ method: 'GET' })
 
     for (const question of questions) {
       const response = responses.find(r => r.question_id === question.id)
-      
+
       // Find the correct option(s)
       const correctOptions = question.question_options.filter(opt => opt.is_correct)
       const correctOptionLabels = correctOptions.map(opt => opt.option_label).join(', ')
@@ -858,10 +865,12 @@ export const getAssessmentResults = createServerFn({ method: 'GET' })
 
           if (isCorrect) {
             correctAnswers++
-          } else {
+          }
+          else {
             incorrectAnswers++
           }
-        } else if (question.question_type === 'short_text' || question.question_type === 'long_text') {
+        }
+        else if (question.question_type === 'short_text' || question.question_type === 'long_text') {
           // Essay questions don't have correct/incorrect
           awardedScore = Number(response.awarded_score)
         }

@@ -1,6 +1,7 @@
+import type { InterviewListItem, InterviewsResponse } from '../server/interviews'
+import { createFileRoute } from '@tanstack/react-router'
 import * as React from 'react'
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { getInterviews, type InterviewsResponse, type InterviewListItem, INTERVIEW_MODE_LABELS, INTERVIEW_RESULT_LABELS } from '../server/interviews'
+import { getInterviews, INTERVIEW_MODE_LABELS, INTERVIEW_RESULT_LABELS } from '../server/interviews'
 
 export const Route = createFileRoute('/interviews')({
   component: InterviewsComponent,
@@ -17,7 +18,8 @@ export const Route = createFileRoute('/interviews')({
 })
 
 function getResultBadgeColor(result: string | null): string {
-  if (!result) return '#6b7280' // gray
+  if (!result)
+    return '#6b7280' // gray
   const colorMap: Record<string, string> = {
     priority_deploy: '#16a34a', // green
     talent_pool: '#2563eb', // blue
@@ -32,7 +34,8 @@ function getResultBadgeColor(result: string | null): string {
 }
 
 function getResultTextColor(result: string | null): string {
-  if (!result) return '#6b7280' // gray
+  if (!result)
+    return '#6b7280' // gray
   const colorMap: Record<string, string> = {
     priority_deploy: '#166534',
     talent_pool: '#1e40af',
@@ -46,9 +49,10 @@ function getResultTextColor(result: string | null): string {
   return colorMap[result] || '#6b7280'
 }
 
-function getModeBadgeStyle(mode: string | null): { backgroundColor: string; color: string } {
-  if (!mode) return { backgroundColor: '#e5e7eb', color: '#6b7280' }
-  const colorMap: Record<string, { backgroundColor: string; color: string }> = {
+function getModeBadgeStyle(mode: string | null): { backgroundColor: string, color: string } {
+  if (!mode)
+    return { backgroundColor: '#e5e7eb', color: '#6b7280' }
+  const colorMap: Record<string, { backgroundColor: string, color: string }> = {
     onsite: { backgroundColor: '#dbeafe', color: '#1e40af' },
     online: { backgroundColor: '#dcfce7', color: '#166534' },
     hybrid: { backgroundColor: '#fef3c7', color: '#92400e' },
@@ -57,7 +61,7 @@ function getModeBadgeStyle(mode: string | null): { backgroundColor: string; colo
 }
 
 function InterviewsComponent() {
-  const { user } = Route.useRouteContext() as { user: { id: string; name: string; email: string | null; partnerType: string } }
+  const { user } = Route.useRouteContext() as { user: { id: string, name: string, email: string | null, partnerType: string } }
   const initialData = Route.useLoaderData() as InterviewsResponse
   const [interviews, setInterviews] = React.useState<InterviewListItem[]>(initialData.interviews)
   const [currentPage, setCurrentPage] = React.useState(initialData.currentPage)
@@ -66,7 +70,8 @@ function InterviewsComponent() {
   const [isLoading, setIsLoading] = React.useState(false)
 
   const loadPage = async (page: number) => {
-    if (page < 1 || page > totalPages || page === currentPage) return
+    if (page < 1 || page > totalPages || page === currentPage)
+      return
     setIsLoading(true)
     try {
       const response = await getInterviews({ data: { page, pageSize: 20 } })
@@ -74,9 +79,11 @@ function InterviewsComponent() {
       setCurrentPage(response.currentPage)
       setTotalPages(response.totalPages)
       setTotalCount(response.totalCount)
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error loading interviews:', error)
-    } finally {
+    }
+    finally {
       setIsLoading(false)
     }
   }
@@ -238,7 +245,7 @@ function InterviewsComponent() {
       <div style={headerStyle}>
         <h1 style={titleStyle}>Daftar Wawancara</h1>
         <div style={headerActionsStyle}>
-          <button 
+          <button
             style={createButtonStyle}
             onClick={handleCreateInterview}
           >
@@ -246,139 +253,157 @@ function InterviewsComponent() {
           </button>
         </div>
       </div>
-      
+
       <div style={tableContainerStyle}>
-        {isLoading ? (
-          <div style={loadingStyle}>Memuat...</div>
-        ) : interviews.length === 0 ? (
-          <div style={emptyStyle}>
-            <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
-              Belum ada wawancara.
-            </p>
-            <button 
-              style={createButtonStyle}
-              onClick={handleCreateInterview}
-            >
-              + Wawancara Baru
-            </button>
-          </div>
-        ) : (
-          <>
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Kandidat</th>
-                  <th style={thStyle}>Tanggal</th>
-                  <th style={thStyle}>Mode</th>
-                  <th style={thStyle}>Hasil</th>
-                  <th style={{ ...thStyle, textAlign: 'center' }}>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {interviews.map((interview) => {
-                  const modeStyle = getModeBadgeStyle(interview.interview_mode)
-                  const badgeBgColor = getResultBadgeColor(interview.result)
-                  const badgeTextColor = getResultTextColor(interview.result)
-                  const resultLabel = interview.result ? INTERVIEW_RESULT_LABELS[interview.result as keyof typeof INTERVIEW_RESULT_LABELS] : 'Belum Dinilai'
-                  const modeLabel = interview.interview_mode ? INTERVIEW_MODE_LABELS[interview.interview_mode as keyof typeof INTERVIEW_MODE_LABELS] : '-'
-                  const isCompleted = interview.result !== null && interview.result !== undefined
-                  
-                  return (
-                    <tr key={interview.id} style={{ backgroundColor: 'white' }}>
-                      <td style={tdStyle}>
-                        <a 
-                          href={`/partners/${interview.candidate_id}`}
-                          style={{ color: '#2563eb', textDecoration: 'none', fontWeight: 500 }}
+        {isLoading
+          ? (
+              <div style={loadingStyle}>Memuat...</div>
+            )
+          : interviews.length === 0
+            ? (
+                <div style={emptyStyle}>
+                  <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
+                    Belum ada wawancara.
+                  </p>
+                  <button
+                    style={createButtonStyle}
+                    onClick={handleCreateInterview}
+                  >
+                    + Wawancara Baru
+                  </button>
+                </div>
+              )
+            : (
+                <>
+                  <table style={tableStyle}>
+                    <thead>
+                      <tr>
+                        <th style={thStyle}>Kandidat</th>
+                        <th style={thStyle}>Tanggal</th>
+                        <th style={thStyle}>Mode</th>
+                        <th style={thStyle}>Hasil</th>
+                        <th style={{ ...thStyle, textAlign: 'center' }}>Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {interviews.map((interview) => {
+                        const modeStyle = getModeBadgeStyle(interview.interview_mode)
+                        const badgeBgColor = getResultBadgeColor(interview.result)
+                        const badgeTextColor = getResultTextColor(interview.result)
+                        const resultLabel = interview.result ? INTERVIEW_RESULT_LABELS[interview.result as keyof typeof INTERVIEW_RESULT_LABELS] : 'Belum Dinilai'
+                        const modeLabel = interview.interview_mode ? INTERVIEW_MODE_LABELS[interview.interview_mode as keyof typeof INTERVIEW_MODE_LABELS] : '-'
+                        const isCompleted = interview.result !== null && interview.result !== undefined
+
+                        return (
+                          <tr key={interview.id} style={{ backgroundColor: 'white' }}>
+                            <td style={tdStyle}>
+                              <a
+                                href={`/partners/${interview.candidate_id}`}
+                                style={{ color: '#2563eb', textDecoration: 'none', fontWeight: 500 }}
+                              >
+                                {interview.candidate_name}
+                              </a>
+                            </td>
+                            <td style={tdStyle}>{interview.interview_date}</td>
+                            <td style={tdStyle}>
+                              <span style={badgeStyle(modeStyle.backgroundColor, modeStyle.color)}>
+                                {modeLabel}
+                              </span>
+                            </td>
+                            <td style={tdStyle}>
+                              <span style={badgeStyle(badgeBgColor, badgeTextColor)}>
+                                {resultLabel}
+                              </span>
+                            </td>
+                            <td style={actionCellStyle}>
+                              <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
+                                {isCompleted && (
+                                  <a
+                                    href={`/interviews/${interview.id}`}
+                                    style={{
+                                      padding: '0.375rem 0.75rem',
+                                      backgroundColor: '#2563eb',
+                                      color: 'white',
+                                      border: '1px solid #2563eb',
+                                      borderRadius: '0.375rem',
+                                      fontSize: '0.75rem',
+                                      fontWeight: 500,
+                                      cursor: 'pointer',
+                                      minHeight: '36px',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.25rem',
+                                      textDecoration: 'none',
+                                    }}
+                                  >
+                                    Lihat
+                                  </a>
+                                )}
+                                <a
+                                  href={`/interviews/${interview.id}/conduct`}
+                                  style={{
+                                    ...conductButtonStyle,
+                                    ...(isCompleted ? { backgroundColor: '#9ca3af', borderColor: '#9ca3af', cursor: 'not-allowed' } : {}),
+                                  }}
+                                  onClick={(e) => {
+                                    if (isCompleted) {
+                                      e.preventDefault()
+                                      alert('Wawancara ini sudah diselesaikan')
+                                    }
+                                  }}
+                                >
+                                  {isCompleted ? 'Selesai' : 'Lakukan'}
+                                </a>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+
+                  {totalPages > 1 && (
+                    <div style={paginationStyle}>
+                      <div style={pageInfoStyle}>
+                        Menampilkan
+                        {' '}
+                        {interviews.length}
+                        {' '}
+                        dari
+                        {' '}
+                        {totalCount}
+                        {' '}
+                        wawancara
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                          style={currentPage === 1 ? disabledButtonStyle : paginationButtonStyle}
+                          onClick={() => loadPage(currentPage - 1)}
+                          disabled={currentPage === 1}
                         >
-                          {interview.candidate_name}
-                        </a>
-                      </td>
-                      <td style={tdStyle}>{interview.interview_date}</td>
-                      <td style={tdStyle}>
-                        <span style={badgeStyle(modeStyle.backgroundColor, modeStyle.color)}>
-                          {modeLabel}
+                          Sebelumnya
+                        </button>
+                        <span style={{ ...pageInfoStyle, display: 'flex', alignItems: 'center' }}>
+                          Halaman
+                          {' '}
+                          {currentPage}
+                          {' '}
+                          dari
+                          {' '}
+                          {totalPages}
                         </span>
-                      </td>
-                      <td style={tdStyle}>
-                        <span style={badgeStyle(badgeBgColor, badgeTextColor)}>
-                          {resultLabel}
-                        </span>
-                      </td>
-                      <td style={actionCellStyle}>
-                        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
-                          {isCompleted && (
-                            <a
-                              href={`/interviews/${interview.id}`}
-                              style={{
-                                padding: '0.375rem 0.75rem',
-                                backgroundColor: '#2563eb',
-                                color: 'white',
-                                border: '1px solid #2563eb',
-                                borderRadius: '0.375rem',
-                                fontSize: '0.75rem',
-                                fontWeight: 500,
-                                cursor: 'pointer',
-                                minHeight: '36px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.25rem',
-                                textDecoration: 'none',
-                              }}
-                            >
-                              Lihat
-                            </a>
-                          )}
-                          <a
-                            href={`/interviews/${interview.id}/conduct`}
-                            style={{
-                              ...conductButtonStyle,
-                              ...(isCompleted ? { backgroundColor: '#9ca3af', borderColor: '#9ca3af', cursor: 'not-allowed' } : {}),
-                            }}
-                            onClick={(e) => {
-                              if (isCompleted) {
-                                e.preventDefault()
-                                alert('Wawancara ini sudah diselesaikan')
-                              }
-                            }}
-                          >
-                            {isCompleted ? 'Selesai' : 'Lakukan'}
-                          </a>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-            
-            {totalPages > 1 && (
-              <div style={paginationStyle}>
-                <div style={pageInfoStyle}>
-                  Menampilkan {interviews.length} dari {totalCount} wawancara
-                </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button
-                    style={currentPage === 1 ? disabledButtonStyle : paginationButtonStyle}
-                    onClick={() => loadPage(currentPage - 1)}
-                    disabled={currentPage === 1}
-                  >
-                    Sebelumnya
-                  </button>
-                  <span style={{ ...pageInfoStyle, display: 'flex', alignItems: 'center' }}>
-                    Halaman {currentPage} dari {totalPages}
-                  </span>
-                  <button
-                    style={currentPage === totalPages ? disabledButtonStyle : paginationButtonStyle}
-                    onClick={() => loadPage(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                  >
-                    Berikutnya
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
+                        <button
+                          style={currentPage === totalPages ? disabledButtonStyle : paginationButtonStyle}
+                          onClick={() => loadPage(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                        >
+                          Berikutnya
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
       </div>
     </div>
   )

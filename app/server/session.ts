@@ -1,4 +1,4 @@
-import { getCookie, setCookie, deleteCookie } from '@tanstack/react-start/server'
+import { deleteCookie, getCookie, setCookie } from '@tanstack/react-start/server'
 import { sign, verify } from 'jsonwebtoken'
 
 const SESSION_SECRET = process.env.SESSION_SECRET
@@ -17,8 +17,8 @@ export interface SessionData {
 export function validateSessionConfig(): void {
   if (!SESSION_SECRET || SESSION_SECRET === 'your-secret-key-here' || SESSION_SECRET === 'your-secret-key-here-change-in-production') {
     throw new Error(
-      'SESSION_SECRET is not configured. Please set a secure SESSION_SECRET in your .env file. ' +
-      'Generate one with: openssl rand -base64 32'
+      'SESSION_SECRET is not configured. Please set a secure SESSION_SECRET in your .env file. '
+      + 'Generate one with: openssl rand -base64 32',
     )
   }
 }
@@ -61,7 +61,8 @@ export async function getSession(): Promise<SessionData | null> {
   try {
     const decoded = verify(token, SESSION_SECRET) as SessionData
     return decoded
-  } catch {
+  }
+  catch {
     return null
   }
 }
@@ -79,7 +80,7 @@ export async function destroySession(): Promise<void> {
  * Get current user from session
  * Returns user data if authenticated, null otherwise
  */
-export async function getCurrentUser(): Promise<{ id: string; email?: string | null } | null> {
+export async function getCurrentUser(): Promise<{ id: string, email?: string | null } | null> {
   const session = await getSession()
   if (!session) {
     return null

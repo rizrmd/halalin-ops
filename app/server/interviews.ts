@@ -122,7 +122,7 @@ export interface FormOptionsResponse {
  * @param pageSize - Number of items per page
  */
 export const getInterviews = createServerFn({ method: 'GET' })
-  .inputValidator((data: unknown): { page: number; pageSize: number } => {
+  .inputValidator((data: unknown): { page: number, pageSize: number } => {
     if (typeof data !== 'object' || data === null) {
       return { page: 1, pageSize: 20 }
     }
@@ -134,10 +134,10 @@ export const getInterviews = createServerFn({ method: 'GET' })
   .handler(async ({ data }): Promise<InterviewsResponse> => {
     const { page, pageSize } = data
     const skip = (page - 1) * pageSize
-    
+
     // Get total count for pagination
     const totalCount = await prisma.interview_sessions.count()
-    
+
     // Get paginated interview sessions with candidate info
     const interviews = await prisma.interview_sessions.findMany({
       select: {
@@ -158,11 +158,11 @@ export const getInterviews = createServerFn({ method: 'GET' })
       skip,
       take: pageSize,
     })
-    
+
     const totalPages = Math.ceil(totalCount / pageSize)
-    
+
     // Transform to interview list items
-    const interviewListItems: InterviewListItem[] = interviews.map((session) => ({
+    const interviewListItems: InterviewListItem[] = interviews.map(session => ({
       id: session.id,
       candidate_name: session.partners_interview_sessions_candidate_idTopartners.full_name,
       interview_date: session.interview_date.toISOString().split('T')[0],
@@ -170,13 +170,13 @@ export const getInterviews = createServerFn({ method: 'GET' })
       result: session.result,
       candidate_id: session.candidate_id,
     }))
-    
-    return { 
-      interviews: interviewListItems, 
-      totalCount, 
-      totalPages, 
-      currentPage: page, 
-      pageSize 
+
+    return {
+      interviews: interviewListItems,
+      totalCount,
+      totalPages,
+      currentPage: page,
+      pageSize,
     }
   })
 
@@ -270,7 +270,8 @@ export const createInterview = createServerFn({ method: 'POST' })
     const interview_mode = input.interview_mode
     if (!interview_mode || typeof interview_mode !== 'string') {
       errors.push({ field: 'interview_mode', message: 'Mode wawancara wajib dipilih' })
-    } else if (!INTERVIEW_MODES.includes(interview_mode as InterviewMode)) {
+    }
+    else if (!INTERVIEW_MODES.includes(interview_mode as InterviewMode)) {
       errors.push({ field: 'interview_mode', message: 'Mode wawancara tidak valid' })
     }
 
@@ -382,7 +383,8 @@ export const createInterview = createServerFn({ method: 'POST' })
           interview_mode: interview.interview_mode,
         },
       }
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error creating interview:', error)
       throw error
     }
@@ -668,7 +670,7 @@ export const getConductInterview = createServerFn({ method: 'GET' })
  * Save a response for a question
  */
 export const saveInterviewResponse = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown): { interviewId: string; responses: SaveResponseInput[] } => {
+  .inputValidator((data: unknown): { interviewId: string, responses: SaveResponseInput[] } => {
     if (typeof data !== 'object' || data === null) {
       throw new Error('Invalid input')
     }
@@ -677,7 +679,7 @@ export const saveInterviewResponse = createServerFn({ method: 'POST' })
       throw new Error('Interview ID is required')
     }
     if (!Array.isArray(responses)) {
-      throw new Error('Responses must be an array')
+      throw new TypeError('Responses must be an array')
     }
     return { interviewId, responses: responses as SaveResponseInput[] }
   })
@@ -724,7 +726,8 @@ export const saveInterviewResponse = createServerFn({ method: 'POST' })
               awarded_score: response.awarded_score || null,
             },
           })
-        } else {
+        }
+        else {
           // Create new response
           await prisma.interview_responses.create({
             data: {
@@ -739,7 +742,8 @@ export const saveInterviewResponse = createServerFn({ method: 'POST' })
       }
 
       return { success: true }
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error saving interview responses:', error)
       return { success: false, error: 'Failed to save responses' }
     }
@@ -749,7 +753,7 @@ export const saveInterviewResponse = createServerFn({ method: 'POST' })
  * Complete/finalize an interview session
  */
 export const completeInterview = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown): { interviewId: string; completionData: CompleteInterviewInput } => {
+  .inputValidator((data: unknown): { interviewId: string, completionData: CompleteInterviewInput } => {
     if (typeof data !== 'object' || data === null) {
       throw new Error('Invalid input')
     }
@@ -792,7 +796,8 @@ export const completeInterview = createServerFn({ method: 'POST' })
       })
 
       return { success: true }
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error completing interview:', error)
       return { success: false, error: 'Failed to complete interview' }
     }
@@ -832,7 +837,7 @@ export const getScoringCriteria = createServerFn({ method: 'GET' })
  * Save a score entry for an interview
  */
 export const saveInterviewScore = createServerFn({ method: 'POST' })
-  .inputValidator((data: unknown): { interviewId: string; scores: SaveScoreInput[] } => {
+  .inputValidator((data: unknown): { interviewId: string, scores: SaveScoreInput[] } => {
     if (typeof data !== 'object' || data === null) {
       throw new Error('Invalid input')
     }
@@ -841,7 +846,7 @@ export const saveInterviewScore = createServerFn({ method: 'POST' })
       throw new Error('Interview ID is required')
     }
     if (!Array.isArray(scores)) {
-      throw new Error('Scores must be an array')
+      throw new TypeError('Scores must be an array')
     }
     return { interviewId, scores: scores as SaveScoreInput[] }
   })
@@ -886,7 +891,8 @@ export const saveInterviewScore = createServerFn({ method: 'POST' })
       }
 
       return { success: true }
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error saving interview scores:', error)
       return { success: false, error: 'Failed to save scores' }
     }
@@ -897,18 +903,24 @@ export const saveInterviewScore = createServerFn({ method: 'POST' })
  */
 export function calculateInterviewResult(
   totalScore: number,
-  maxScore: number
+  maxScore: number,
 ): InterviewResult {
-  if (maxScore === 0) return 'not_ready'
-  
+  if (maxScore === 0)
+    return 'not_ready'
+
   const percentage = (totalScore / maxScore) * 100
-  
+
   // Score-to-result mapping
-  if (percentage >= 90) return 'priority_deploy'
-  if (percentage >= 80) return 'talent_pool'
-  if (percentage >= 70) return 'deployable_penyelia_halal'
-  if (percentage >= 60) return 'training_first'
-  if (percentage >= 50) return 'training_required'
+  if (percentage >= 90)
+    return 'priority_deploy'
+  if (percentage >= 80)
+    return 'talent_pool'
+  if (percentage >= 70)
+    return 'deployable_penyelia_halal'
+  if (percentage >= 60)
+    return 'training_first'
+  if (percentage >= 50)
+    return 'training_required'
   return 'not_ready'
 }
 

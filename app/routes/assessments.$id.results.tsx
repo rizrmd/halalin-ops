@@ -1,10 +1,11 @@
-import * as React from 'react'
+import type { AssessmentResultResponse } from '../server/assessments'
 import { createFileRoute } from '@tanstack/react-router'
+import * as React from 'react'
 import {
+
   getAssessmentResults,
-  type AssessmentResultResponse,
-  type QuestionResult,
   QUESTION_TYPE_LABELS,
+
 } from '../server/assessments'
 
 export const Route = createFileRoute('/assessments/$id/results')({
@@ -22,8 +23,8 @@ export const Route = createFileRoute('/assessments/$id/results')({
 
 function AssessmentResultsComponent() {
   const initialData = Route.useLoaderData() as AssessmentResultResponse
-  const { user } = Route.useRouteContext() as { user: { id: string; name: string; email: string | null; partnerType: string } }
-  
+  const { user } = Route.useRouteContext() as { user: { id: string, name: string, email: string | null, partnerType: string } }
+
   const [session] = React.useState(initialData.session)
   const [results] = React.useState(initialData.results)
   const [totalQuestions] = React.useState(initialData.totalQuestions)
@@ -255,7 +256,8 @@ function AssessmentResultsComponent() {
 
   return (
     <div style={containerStyle}>
-      <style>{`
+      <style>
+        {`
         @media (min-width: 640px) {
           .score-grid {
             grid-template-columns: repeat(3, 1fr) !important;
@@ -264,7 +266,8 @@ function AssessmentResultsComponent() {
             grid-template-columns: repeat(2, 1fr) !important;
           }
         }
-      `}</style>
+      `}
+      </style>
 
       <div style={headerStyle}>
         <h1 style={titleStyle}>Hasil Penilaian</h1>
@@ -334,7 +337,8 @@ function AssessmentResultsComponent() {
             <div style={statsRowStyle}>
               <span style={statsLabelStyle}>Akurasi</span>
               <span style={statsValueStyle}>
-                {((correctAnswers / totalQuestions) * 100).toFixed(1)}%
+                {((correctAnswers / totalQuestions) * 100).toFixed(1)}
+                %
               </span>
             </div>
           )}
@@ -359,39 +363,57 @@ function AssessmentResultsComponent() {
             <div style={questionHeaderStyle}>
               {result.section_title && (
                 <div style={questionMetaStyle}>
-                  Bagian: {result.section_title} • {questionTypeLabel}
+                  Bagian:
+                  {' '}
+                  {result.section_title}
+                  {' '}
+                  •
+                  {' '}
+                  {questionTypeLabel}
                 </div>
               )}
               <div style={questionPromptStyle}>
-                {index + 1}. {result.prompt}
+                {index + 1}
+                .
+                {result.prompt}
               </div>
             </div>
 
             {/* User's Answer */}
             <div style={answerSectionStyle}>
               <div style={answerLabelStyle}>Jawaban Anda:</div>
-              {showCorrectness ? (
-                result.is_correct ? (
-                  <div style={correctAnswerStyle}>
-                    ✓ {result.selected_option_label || result.user_answer || '(tidak dijawab)'}
-                  </div>
-                ) : (
-                  <div style={incorrectAnswerStyle}>
-                    ✗ {result.selected_option_label || result.user_answer || '(tidak dijawab)'}
-                  </div>
-                )
-              ) : (
-                <div style={answerValueStyle}>
-                  {result.user_answer || '(tidak dijawab)'}
-                </div>
-              )}
+              {showCorrectness
+                ? (
+                    result.is_correct
+                      ? (
+                          <div style={correctAnswerStyle}>
+                            ✓
+                            {' '}
+                            {result.selected_option_label || result.user_answer || '(tidak dijawab)'}
+                          </div>
+                        )
+                      : (
+                          <div style={incorrectAnswerStyle}>
+                            ✗
+                            {' '}
+                            {result.selected_option_label || result.user_answer || '(tidak dijawab)'}
+                          </div>
+                        )
+                  )
+                : (
+                    <div style={answerValueStyle}>
+                      {result.user_answer || '(tidak dijawab)'}
+                    </div>
+                  )}
 
               {/* Correct Answer (for objective questions) */}
               {showCorrectness && !result.is_correct && result.correct_option_label && (
                 <div style={{ marginTop: '0.75rem' }}>
                   <div style={answerLabelStyle}>Jawaban Benar:</div>
                   <div style={correctAnswerStyle}>
-                    ✓ {result.correct_option_label}
+                    ✓
+                    {' '}
+                    {result.correct_option_label}
                   </div>
                 </div>
               )}
@@ -400,8 +422,13 @@ function AssessmentResultsComponent() {
               {isObjective && (
                 <div style={scoreBreakdownStyle}>
                   <div style={scoreBreakdownItemStyle}>
-                    Skor: <strong style={{ color: result.is_correct ? '#16a34a' : '#dc2626' }}>
-                      {result.awarded_score.toFixed(1)} / {result.max_score.toFixed(1)}
+                    Skor:
+                    {' '}
+                    <strong style={{ color: result.is_correct ? '#16a34a' : '#dc2626' }}>
+                      {result.awarded_score.toFixed(1)}
+                      {' '}
+                      /
+                      {result.max_score.toFixed(1)}
                     </strong>
                   </div>
                 </div>

@@ -1,0 +1,57 @@
+{
+  "groupId": "assessment-list-creation",
+  "testedAt": "2026-03-09T00:00:00Z",
+  "credentials": {
+    "account": "partner1@example.com",
+    "namespace": "assessment-system"
+  },
+  "toolsUsed": ["agent-browser"],
+  "assertions": [
+    {
+      "id": "VAL-ASSESS-001",
+      "title": "Assessment list displays",
+      "status": "blocked",
+      "steps": [],
+      "evidence": {
+        "screenshots": [],
+        "consoleErrors": null,
+        "network": null
+      },
+      "issues": "Browser automation unavailable: libatk-1.0.so.0 library missing from system. Cannot launch Chromium headless shell."
+    },
+    {
+      "id": "VAL-ASSESS-002",
+      "title": "Create assessment attempt",
+      "status": "blocked",
+      "steps": [],
+      "evidence": {
+        "screenshots": [],
+        "consoleErrors": null,
+        "network": null
+      },
+      "issues": "Browser automation unavailable: libatk-1.0.so.0 library missing from system. Cannot launch Chromium headless shell."
+    },
+    {
+      "id": "VAL-UI-001",
+      "title": "Indonesian language",
+      "status": "blocked",
+      "steps": [],
+      "evidence": {
+        "screenshots": [],
+        "consoleErrors": null,
+        "network": null
+      },
+      "issues": "Browser automation unavailable: libatk-1.0.so.0 library missing from system. Cannot launch Chromium headless shell."
+    }
+  ],
+  "frictions": [],
+  "blockers": [
+    {
+      "description": "agent-browser infrastructure failure: Chromium headless shell requires system library libatk-1.0.so.0 (ATK accessibility toolkit) which is not installed on the host system",
+      "affectedAssertions": ["VAL-ASSESS-001", "VAL-ASSESS-002", "VAL-UI-001"],
+      "quickFixAttempted": "Attempted: 1) agent-browser install, 2) agent-browser install --with-deps, 3) npx playwright install-deps chromium. All failed because sudo is required and not available in the execution environment.",
+      "errorDetails": "/home/riz/.cache/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-linux64/chrome-headless-shell: error while loading shared libraries: libatk-1.0.so.0: cannot open shared object file: No such file or directory"
+    }
+  ],
+  "summary": "All 3 assertions (VAL-ASSESS-001, VAL-ASSESS-002, VAL-UI-001) are blocked due to browser automation infrastructure failure. The Chromium browser requires system-level GTK/ATK libraries that are not installed and cannot be installed without root access."
+}

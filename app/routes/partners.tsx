@@ -1,6 +1,7 @@
-import * as React from 'react'
+import type { PartnerListItem, PartnersResponse } from '../server/partners'
 import { createFileRoute } from '@tanstack/react-router'
-import { getPartners, type PartnersResponse, type PartnerListItem } from '../server/partners'
+import * as React from 'react'
+import { getPartners } from '../server/partners'
 
 export const Route = createFileRoute('/partners')({
   component: PartnersComponent,
@@ -36,7 +37,8 @@ function PartnersComponent() {
   const [isLoading, setIsLoading] = React.useState(false)
 
   const loadPage = async (page: number) => {
-    if (page < 1 || page > totalPages || page === currentPage) return
+    if (page < 1 || page > totalPages || page === currentPage)
+      return
     setIsLoading(true)
     try {
       const response = await getPartners({ data: { page, pageSize: 20 } })
@@ -44,9 +46,11 @@ function PartnersComponent() {
       setCurrentPage(response.currentPage)
       setTotalPages(response.totalPages)
       setTotalCount(response.totalCount)
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error loading partners:', error)
-    } finally {
+    }
+    finally {
       setIsLoading(false)
     }
   }
@@ -197,7 +201,8 @@ function PartnersComponent() {
 
   return (
     <div style={containerStyle}>
-      <style>{`
+      <style>
+        {`
         @media (max-width: 640px) {
           .desktop-table { display: none !important; }
           .mobile-cards { display: block !important; }
@@ -205,12 +210,18 @@ function PartnersComponent() {
         @media (min-width: 641px) {
           .mobile-cards { display: none !important; }
         }
-      `}</style>
+      `}
+      </style>
 
       <div style={headerStyle}>
         <h1 style={titleStyle}>Daftar Mitra</h1>
         <div style={headerActionsStyle}>
-          <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>Total: {totalCount} mitra</span>
+          <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+            Total:
+            {totalCount}
+            {' '}
+            mitra
+          </span>
           <button onClick={handleCreatePartner} style={createButtonStyle}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
               <path d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z" />
@@ -220,91 +231,108 @@ function PartnersComponent() {
         </div>
       </div>
 
-      {isLoading ? (
-        <div style={loadingStyle}>Memuat data mitra...</div>
-      ) : (
-        <div style={tableContainerStyle}>
-          <table className="desktop-table" style={tableStyle}>
-            <thead>
-              <tr>
-                <th style={thStyle}>Nama</th>
-                <th style={thStyle}>Email</th>
-                <th style={thStyle}>Telepon</th>
-                <th style={thStyle}>Tipe Mitra</th>
-              </tr>
-            </thead>
-            <tbody>
-              {partners.length === 0 ? (
-                <tr><td colSpan={4} style={emptyStyle}>Tidak ada data mitra yang tersedia.</td></tr>
-              ) : (
-                partners.map((partner) => (
-                  <tr key={partner.id}>
-                    <td style={tdStyle}>
-                      <a href={`/partners/${partner.id}`} style={{ color: '#111827', textDecoration: 'none' }}>
-                        {partner.full_name}
-                      </a>
-                    </td>
-                    <td style={tdStyle}>{partner.email || '-'}</td>
-                    <td style={tdStyle}>{partner.phone || '-'}</td>
-                    <td style={tdStyle}>
-                      <span style={partnerTypeBadgeStyle}>{formatPartnerType(partner.partner_type)}</span>
-                    </td>
+      {isLoading
+        ? (
+            <div style={loadingStyle}>Memuat data mitra...</div>
+          )
+        : (
+            <div style={tableContainerStyle}>
+              <table className="desktop-table" style={tableStyle}>
+                <thead>
+                  <tr>
+                    <th style={thStyle}>Nama</th>
+                    <th style={thStyle}>Email</th>
+                    <th style={thStyle}>Telepon</th>
+                    <th style={thStyle}>Tipe Mitra</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {partners.length === 0
+                    ? (
+                        <tr><td colSpan={4} style={emptyStyle}>Tidak ada data mitra yang tersedia.</td></tr>
+                      )
+                    : (
+                        partners.map(partner => (
+                          <tr key={partner.id}>
+                            <td style={tdStyle}>
+                              <a href={`/partners/${partner.id}`} style={{ color: '#111827', textDecoration: 'none' }}>
+                                {partner.full_name}
+                              </a>
+                            </td>
+                            <td style={tdStyle}>{partner.email || '-'}</td>
+                            <td style={tdStyle}>{partner.phone || '-'}</td>
+                            <td style={tdStyle}>
+                              <span style={partnerTypeBadgeStyle}>{formatPartnerType(partner.partner_type)}</span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                </tbody>
+              </table>
 
-          <div className="mobile-cards">
-            {partners.length === 0 ? (
-              <div style={emptyStyle}>Tidak ada data mitra yang tersedia.</div>
-            ) : (
-              partners.map((partner) => (
-                <div key={partner.id} style={mobileCardStyle}>
-                  <div>
-                    <a href={`/partners/${partner.id}`}>{partner.full_name}</a>
-                  </div>
-                  <div>{formatPartnerType(partner.partner_type)}</div>
-                </div>
-              ))
-            )}
-          </div>
-
-          {totalPages > 1 && (
-            <div style={paginationStyle}>
-              <div>Menampilkan {startItem} - {endItem} dari {totalCount} data</div>
-              <div style={{ display: 'flex', gap: '0.25rem' }}>
-                <button
-                  onClick={() => loadPage(currentPage - 1)}
-                  disabled={currentPage === 1 || isLoading}
-                  style={currentPage === 1 ? buttonDisabledStyle : buttonBaseStyle}
-                >
-                  &larr;
-                </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1)
-                  .filter(page => page <= 2 || page > totalPages - 2 || Math.abs(page - currentPage) <= 1)
-                  .map((page) => (
-                    <button
-                      key={page}
-                      onClick={() => loadPage(page)}
-                      disabled={isLoading}
-                      style={page === currentPage ? buttonActiveStyle : buttonBaseStyle}
-                    >
-                      {page}
-                    </button>
-                  ))}
-                <button
-                  onClick={() => loadPage(currentPage + 1)}
-                  disabled={currentPage === totalPages || isLoading}
-                  style={currentPage === totalPages ? buttonDisabledStyle : buttonBaseStyle}
-                >
-                  &rarr;
-                </button>
+              <div className="mobile-cards">
+                {partners.length === 0
+                  ? (
+                      <div style={emptyStyle}>Tidak ada data mitra yang tersedia.</div>
+                    )
+                  : (
+                      partners.map(partner => (
+                        <div key={partner.id} style={mobileCardStyle}>
+                          <div>
+                            <a href={`/partners/${partner.id}`}>{partner.full_name}</a>
+                          </div>
+                          <div>{formatPartnerType(partner.partner_type)}</div>
+                        </div>
+                      ))
+                    )}
               </div>
+
+              {totalPages > 1 && (
+                <div style={paginationStyle}>
+                  <div>
+                    Menampilkan
+                    {startItem}
+                    {' '}
+                    -
+                    {endItem}
+                    {' '}
+                    dari
+                    {totalCount}
+                    {' '}
+                    data
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.25rem' }}>
+                    <button
+                      onClick={() => loadPage(currentPage - 1)}
+                      disabled={currentPage === 1 || isLoading}
+                      style={currentPage === 1 ? buttonDisabledStyle : buttonBaseStyle}
+                    >
+                      &larr;
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(page => page <= 2 || page > totalPages - 2 || Math.abs(page - currentPage) <= 1)
+                      .map(page => (
+                        <button
+                          key={page}
+                          onClick={() => loadPage(page)}
+                          disabled={isLoading}
+                          style={page === currentPage ? buttonActiveStyle : buttonBaseStyle}
+                        >
+                          {page}
+                        </button>
+                      ))}
+                    <button
+                      onClick={() => loadPage(currentPage + 1)}
+                      disabled={currentPage === totalPages || isLoading}
+                      style={currentPage === totalPages ? buttonDisabledStyle : buttonBaseStyle}
+                    >
+                      &rarr;
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
-        </div>
-      )}
     </div>
   )
 }

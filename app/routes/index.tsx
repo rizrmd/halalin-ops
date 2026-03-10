@@ -1,5 +1,5 @@
-import * as React from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
+import * as React from 'react'
 
 export const Route = createFileRoute('/')({
   component: DashboardComponent,
@@ -13,7 +13,7 @@ export const Route = createFileRoute('/')({
 })
 
 function DashboardComponent() {
-  const { user } = Route.useRouteContext() as { user: { id: string; name: string; email: string | null; partnerType: string } }
+  const { user } = Route.useRouteContext() as { user: { id: string, name: string, email: string | null, partnerType: string } }
 
   const navigationCards = [
     {
@@ -126,11 +126,14 @@ function DashboardComponent() {
       </div>
 
       <div style={welcomeStyle}>
-        Selamat datang, <strong>{user.name}</strong>!
+        Selamat datang,
+        {' '}
+        <strong>{user.name}</strong>
+        !
       </div>
 
       <div style={gridStyle}>
-        {navigationCards.map((card) => (
+        {navigationCards.map(card => (
           <Link
             key={card.to}
             to={card.to}

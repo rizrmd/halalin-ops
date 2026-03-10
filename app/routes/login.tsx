@@ -1,6 +1,6 @@
-import * as React from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { login, getAuthUser } from '../server/auth'
+import * as React from 'react'
+import { getAuthUser, login } from '../server/auth'
 
 export const Route = createFileRoute('/login')({
   component: LoginComponent,
@@ -61,16 +61,20 @@ function LoginComponent() {
         if (redirectTo) {
           const decodedRedirect = decodeURIComponent(redirectTo)
           window.location.href = decodedRedirect
-        } else {
+        }
+        else {
           navigate({ to: '/' })
         }
-      } else {
+      }
+      else {
         setError(result.error || 'Terjadi kesalahan saat masuk')
       }
-    } catch (err) {
+    }
+    catch (err) {
       setError('Terjadi kesalahan. Silakan coba lagi.')
       console.error('Login error:', err)
-    } finally {
+    }
+    finally {
       setIsLoading(false)
     }
   }
@@ -145,7 +149,7 @@ function LoginComponent() {
               id="email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value)}
               required
               style={{
                 width: '100%',
@@ -174,7 +178,7 @@ function LoginComponent() {
               id="password"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={e => setPassword(e.target.value)}
               required
               style={{
                 width: '100%',

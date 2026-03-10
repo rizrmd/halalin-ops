@@ -1,12 +1,13 @@
-import * as React from 'react'
+import type { FormOptionsResponse, ValidationError } from '../server/interviews'
 import { createFileRoute } from '@tanstack/react-router'
+import * as React from 'react'
 import {
   createInterview,
+
   getInterviewFormOptions,
-  INTERVIEW_MODES,
   INTERVIEW_MODE_LABELS,
-  type ValidationError,
-  type FormOptionsResponse,
+  INTERVIEW_MODES,
+
 } from '../server/interviews'
 
 export const Route = createFileRoute('/interviews/new')({
@@ -54,7 +55,7 @@ function CreateInterviewComponent() {
   const handleChange = (field: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     if (errors[field]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev }
         delete newErrors[field]
         return newErrors
@@ -82,7 +83,8 @@ function CreateInterviewComponent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!validateForm()) return
+    if (!validateForm())
+      return
 
     setIsSubmitting(true)
     setSubmitError(null)
@@ -106,17 +108,20 @@ function CreateInterviewComponent() {
         setTimeout(() => {
           window.location.href = '/interviews'
         }, 1500)
-      } else if (result.errors) {
+      }
+      else if (result.errors) {
         const fieldErrors: Record<string, string> = {}
         result.errors.forEach((err: ValidationError) => {
           fieldErrors[err.field] = err.message
         })
         setErrors(fieldErrors)
       }
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error creating interview:', error)
       setSubmitError('Terjadi kesalahan saat menyimpan data. Silakan coba lagi.')
-    } finally {
+    }
+    finally {
       setIsSubmitting(false)
     }
   }
@@ -309,13 +314,15 @@ function CreateInterviewComponent() {
 
   return (
     <div style={containerStyle}>
-      <style>{`
+      <style>
+        {`
         @media (min-width: 640px) {
           .form-grid {
             grid-template-columns: repeat(2, 1fr) !important;
           }
         }
-      `}</style>
+      `}
+      </style>
 
       <div style={headerStyle}>
         <h1 style={titleStyle}>Jadwalkan Wawancara Baru</h1>
@@ -336,17 +343,18 @@ function CreateInterviewComponent() {
           <div className="form-grid" style={formGridStyle}>
             <div style={{ ...formGroupStyle, ...formGroupFullWidthStyle }}>
               <label htmlFor="candidate_id" style={labelStyle}>
-                Kandidat<span style={requiredMarkStyle}>*</span>
+                Kandidat
+                <span style={requiredMarkStyle}>*</span>
               </label>
               <select
                 id="candidate_id"
                 value={formData.candidate_id}
-                onChange={(e) => handleChange('candidate_id', e.target.value)}
+                onChange={e => handleChange('candidate_id', e.target.value)}
                 style={{ ...selectStyle, ...(errors.candidate_id ? inputErrorStyle : {}) }}
                 disabled={isSubmitting || submitSuccess}
               >
                 <option value="">Pilih Kandidat</option>
-                {options.candidates.map((candidate) => (
+                {options.candidates.map(candidate => (
                   <option key={candidate.id} value={candidate.id}>
                     {candidate.full_name}
                   </option>
@@ -365,12 +373,12 @@ function CreateInterviewComponent() {
               <select
                 id="interviewer_id"
                 value={formData.interviewer_id}
-                onChange={(e) => handleChange('interviewer_id', e.target.value)}
+                onChange={e => handleChange('interviewer_id', e.target.value)}
                 style={selectStyle}
                 disabled={isSubmitting || submitSuccess}
               >
                 <option value="">Pilih Pewawancara (Opsional)</option>
-                {options.interviewers.map((interviewer) => (
+                {options.interviewers.map(interviewer => (
                   <option key={interviewer.id} value={interviewer.id}>
                     {interviewer.full_name}
                   </option>
@@ -380,13 +388,14 @@ function CreateInterviewComponent() {
 
             <div style={formGroupStyle}>
               <label htmlFor="interview_date" style={labelStyle}>
-                Tanggal Wawancara<span style={requiredMarkStyle}>*</span>
+                Tanggal Wawancara
+                <span style={requiredMarkStyle}>*</span>
               </label>
               <input
                 type="date"
                 id="interview_date"
                 value={formData.interview_date}
-                onChange={(e) => handleChange('interview_date', e.target.value)}
+                onChange={e => handleChange('interview_date', e.target.value)}
                 min={today}
                 style={{ ...inputStyle, ...(errors.interview_date ? inputErrorStyle : {}) }}
                 disabled={isSubmitting || submitSuccess}
@@ -396,10 +405,11 @@ function CreateInterviewComponent() {
 
             <div style={{ ...formGroupStyle, ...formGroupFullWidthStyle }}>
               <label style={labelStyle}>
-                Mode Wawancara<span style={requiredMarkStyle}>*</span>
+                Mode Wawancara
+                <span style={requiredMarkStyle}>*</span>
               </label>
               <div style={radioGroupStyle}>
-                {INTERVIEW_MODES.map((mode) => (
+                {INTERVIEW_MODES.map(mode => (
                   <label
                     key={mode}
                     style={{
@@ -412,7 +422,7 @@ function CreateInterviewComponent() {
                       name="interview_mode"
                       value={mode}
                       checked={formData.interview_mode === mode}
-                      onChange={(e) => handleChange('interview_mode', e.target.value)}
+                      onChange={e => handleChange('interview_mode', e.target.value)}
                       style={{ cursor: 'pointer' }}
                       disabled={isSubmitting || submitSuccess}
                     />
@@ -428,12 +438,12 @@ function CreateInterviewComponent() {
               <select
                 id="bank_id"
                 value={formData.bank_id}
-                onChange={(e) => handleChange('bank_id', e.target.value)}
+                onChange={e => handleChange('bank_id', e.target.value)}
                 style={selectStyle}
                 disabled={isSubmitting || submitSuccess}
               >
                 <option value="">Pilih Template (Opsional)</option>
-                {options.questionBanks.map((bank) => (
+                {options.questionBanks.map(bank => (
                   <option key={bank.id} value={bank.id}>
                     {bank.title}
                   </option>
@@ -452,7 +462,7 @@ function CreateInterviewComponent() {
                 type="text"
                 id="objective"
                 value={formData.objective}
-                onChange={(e) => handleChange('objective', e.target.value)}
+                onChange={e => handleChange('objective', e.target.value)}
                 style={inputStyle}
                 placeholder="Contoh: Evaluasi kompetensi teknis, Cultural fit"
                 disabled={isSubmitting || submitSuccess}
@@ -469,7 +479,7 @@ function CreateInterviewComponent() {
             <textarea
               id="notes"
               value={formData.notes}
-              onChange={(e) => handleChange('notes', e.target.value)}
+              onChange={e => handleChange('notes', e.target.value)}
               style={textareaStyle}
               placeholder="Tambahkan catatan atau instruksi khusus untuk wawancara ini"
               rows={4}
