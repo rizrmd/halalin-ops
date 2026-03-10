@@ -41,7 +41,13 @@ async function main() {
     console.log('✓ Created admin user:', admin.email)
   } catch (e) {
     if (e.code !== 'P2002') throw e
-    console.log('✓ Admin user already exists')
+    console.log('✓ Admin user already exists, updating password...')
+    // Update password for existing admin
+    await prisma.partners.update({
+      where: { email: 'admin@halalin.co.id' },
+      data: { password_hash: hashedPassword },
+    })
+    console.log('✓ Admin password updated')
   }
 
   // Create sample partner user
