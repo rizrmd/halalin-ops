@@ -65,6 +65,9 @@ RUN pnpm prisma generate
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
+# Copy docker-entrypoint.sh from node image
+COPY --from=node:22-alpine /usr/local/bin/docker-entrypoint.sh /usr/local/bin/
+
 # Change ownership of app files
 RUN chown -R nodejs:nodejs /app
 
@@ -80,5 +83,8 @@ ENV PORT=3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD curl -fs http://localhost:${PORT}/ || exit 1
 
+# Use entrypoint script for proper signal handling
+ENTRYPOINT ["docker-entrypoint.sh"]
+
 # Start the server using experimental-vm-modules flag (required for SSR)
-CMD ["node", "--experimental-vm-modules", "dist/server/ssr.js"]
+CMD ["pnpm", "start"]
