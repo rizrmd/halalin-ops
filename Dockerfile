@@ -38,7 +38,9 @@ RUN pnpm install --no-frozen-lockfile --prod
 # Copy built artifacts from builder
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+
+# Generate Prisma client in production
+RUN pnpm prisma generate
 
 # Expose the default TanStack Start port
 EXPOSE 3000
