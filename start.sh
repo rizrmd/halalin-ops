@@ -9,6 +9,10 @@ pnpm prisma migrate deploy || {
 }
 
 echo "Database schema synchronized."
+echo "Seeding database..."
+pnpm db:seed || {
+  echo "Seeding may have already been done or failed (non-critical)"
+}
 
 echo "Starting server..."
 exec node --experimental-vm-modules server.js
