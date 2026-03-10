@@ -42,12 +42,15 @@ async function main() {
   } catch (e) {
     if (e.code !== 'P2002') throw e
     console.log('✓ Admin user already exists, updating password...')
-    // Update password for existing admin
-    await prisma.partners.update({
-      where: { email: 'admin@halalin.co.id' },
-      data: { password_hash: hashedPassword },
-    })
-    console.log('✓ Admin password updated')
+    // Update password for existing admin - need to get ID first
+    const existingAdmin = await prisma.partners.findFirst({ where: { email: 'admin@halalin.co.id' }})
+    if (existingAdmin) {
+      await prisma.partners.update({
+        where: { id: existingAdmin.id },
+        data: { password_hash: hashedPassword },
+      })
+      console.log('✓ Admin password updated for:', existingAdmin.email)
+    }
   }
 
   // Create sample partner user
