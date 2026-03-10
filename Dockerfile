@@ -56,6 +56,8 @@ RUN pnpm install --frozen-lockfile --prod
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY server.js ./server.js
+COPY start.sh ./start.sh
+RUN chmod +x ./start.sh
 
 # Generate Prisma client in production (needed for runtime)
 RUN pnpm prisma generate
@@ -88,5 +90,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
 # Use entrypoint script for proper signal handling
 ENTRYPOINT ["docker-entrypoint.sh"]
 
-# Start the server using experimental-vm-modules flag (required for SSR)
-CMD ["node", "--experimental-vm-modules", "server.js"]
+# Run migrations and start the server
+CMD ["./start.sh"]

@@ -12,7 +12,10 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:setup": "prisma migrate deploy && tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",
@@ -47,6 +50,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "jsdom": "^28.1.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.7.2",
     "vite": "^7.3.1",
     "vite-tsconfig-paths": "^5.1.4",
