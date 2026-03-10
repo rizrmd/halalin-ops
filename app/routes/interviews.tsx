@@ -695,10 +695,10 @@ function InterviewsComponent() {
                 {/* Mobile Cards View */}
                 <div className="mobile-cards">
                   {data.interviews.map((interview: InterviewListItem) => {
-                    const modeStyle = getModeBadgeStyle(interview.mode)
-                    const modeLabel = interview.mode ? INTERVIEW_MODE_LABELS[interview.mode] : '-'
+                    const modeStyle = getModeBadgeStyle(interview.interview_mode)
+                    const modeLabel = interview.interview_mode ? INTERVIEW_MODE_LABELS[interview.interview_mode as InterviewMode] : '-'
                     const resultLabel = interview.result
-                      ? INTERVIEW_RESULT_LABELS[interview.result]
+                      ? INTERVIEW_RESULT_LABELS[interview.result as InterviewResult]
                       : 'Belum ada hasil'
                     const badgeBgColor = getResultBadgeColor(interview.result)
                     const isCompleted = !!interview.result
@@ -716,10 +716,6 @@ function InterviewsComponent() {
                             {modeLabel}
                           </span>
                         </div>
-                        
-                        {interview.candidate_email && (
-                          <div style={mobileCardSubtitleStyle}>{interview.candidate_email}</div>
-                        )}
                         
                         <div style={mobileCardRowStyle}>
                           <span style={mobileCardLabelStyle}>Tanggal</span>
