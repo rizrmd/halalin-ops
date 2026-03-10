@@ -116,7 +116,7 @@ function LoginComponent() {
             marginBottom: '1.5rem',
           }}
         >
-          Sistem Manajemen Interview & Assessment
+          Halalin Ops
         </p>
         {error && (
           <div

@@ -122,7 +122,7 @@ function DashboardComponent() {
     <div style={containerStyle}>
       <div style={headerStyle}>
         <h1 style={titleStyle}>Dasbor</h1>
-        <p style={subtitleStyle}>Sistem Manajemen Interview & Assessment</p>
+        <p style={subtitleStyle}>Partner Qualification, Assessment, and Deployment</p>
       </div>
 
       <div style={welcomeStyle}>

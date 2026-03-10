@@ -45,10 +45,45 @@ export default function Header({ user }: HeaderProps) {
   }
 
   const logoLinkStyle: React.CSSProperties = {
-    color: 'white',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.75rem',
     textDecoration: 'none',
-    fontSize: '1.25rem',
-    fontWeight: 'bold',
+  }
+
+  const logoImageStyle: React.CSSProperties = {
+    height: '2.25rem',
+    width: 'auto',
+    display: 'block',
+  }
+
+  const logoTextGroupStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    minWidth: 0,
+  }
+
+  const logoWordmarkStyle: React.CSSProperties = {
+    color: 'white',
+    fontSize: '1.125rem',
+    fontWeight: 700,
+    lineHeight: 1,
+    letterSpacing: '0.01em',
+  }
+
+  const logoBadgeStyle: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '0.2rem 0.5rem',
+    borderRadius: '999px',
+    backgroundColor: '#fbbf24',
+    color: '#111827',
+    fontSize: '0.75rem',
+    fontWeight: 700,
+    lineHeight: 1,
+    textTransform: 'uppercase',
   }
 
   const desktopNavStyle: React.CSSProperties = {
@@ -177,7 +212,15 @@ export default function Header({ user }: HeaderProps) {
             {/* Logo */}
             <div style={logoStyle}>
               <Link to="/" style={logoLinkStyle}>
-                Halal Form
+                <img
+                  src="/halalin-logo.png"
+                  alt="Halalin"
+                  style={logoImageStyle}
+                />
+                <span style={logoTextGroupStyle}>
+                  <span style={logoWordmarkStyle}>Halalin</span>
+                  <span style={logoBadgeStyle}>Ops</span>
+                </span>
               </Link>
             </div>
 

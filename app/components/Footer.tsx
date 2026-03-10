@@ -27,7 +27,7 @@ export default function Footer() {
       <div style={containerStyle}>
         <div style={wrapperStyle}>
           <p style={{ margin: 0 }}>
-            © 2024 Halal Form - Sistem Manajemen Interview & Assessment
+            © 2024 Halalin Ops - Partner Qualification, Assessment, and Deployment
           </p>
           <p style={{ margin: 0, fontSize: '0.75rem', color: '#9ca3af' }}>
             Hak cipta dilindungi undang-undang

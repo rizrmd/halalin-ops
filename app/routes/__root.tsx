@@ -26,7 +26,7 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'Halal Form - Sistem Manajemen Interview & Assessment' },
+      { title: 'Halalin Ops - Partner Qualification, Assessment, and Deployment' },
     ],
     links: [{ rel: 'stylesheet', href: appCss }],
   }),
