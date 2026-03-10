@@ -143,7 +143,8 @@ function InterviewsComponent() {
     fontSize: '0.75rem',
     fontWeight: 500,
     cursor: 'pointer',
-    minHeight: '36px',
+    minHeight: '44px',
+    minWidth: '44px',
     display: 'inline-flex',
     alignItems: 'center',
     gap: '0.25rem',
@@ -154,6 +155,78 @@ function InterviewsComponent() {
     padding: '1rem',
     borderBottom: '1px solid #e5e7eb',
     textAlign: 'center',
+  }
+
+  // Mobile card styles
+  const mobileCardStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.75rem',
+    padding: '1rem',
+    border: '1px solid #e5e7eb',
+    borderRadius: '0.5rem',
+    backgroundColor: 'white',
+    marginBottom: '0.75rem',
+  }
+
+  const mobileCardHeaderStyle: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: '0.5rem',
+  }
+
+  const mobileCardTitleStyle: React.CSSProperties = {
+    fontSize: '1rem',
+    fontWeight: 600,
+    color: '#111827',
+    flex: 1,
+  }
+
+  const mobileCardSubtitleStyle: React.CSSProperties = {
+    fontSize: '0.875rem',
+    color: '#6b7280',
+  }
+
+  const mobileCardRowStyle: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '0.5rem',
+  }
+
+  const mobileCardLabelStyle: React.CSSProperties = {
+    fontSize: '0.75rem',
+    color: '#6b7280',
+    textTransform: 'uppercase',
+  }
+
+  const mobileCardValueStyle: React.CSSProperties = {
+    fontSize: '0.875rem',
+    fontWeight: 500,
+    color: '#374151',
+  }
+
+  const mobileCardActionsStyle: React.CSSProperties = {
+    display: 'flex',
+    gap: '0.5rem',
+    marginTop: '0.5rem',
+    paddingTop: '0.75rem',
+    borderTop: '1px solid #e5e7eb',
+  }
+
+  const actionButtonBaseStyle: React.CSSProperties = {
+    padding: '0.5rem 0.875rem',
+    borderRadius: '0.375rem',
+    fontSize: '0.875rem',
+    fontWeight: 500,
+    textDecoration: 'none',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '44px',
+    minWidth: '44px',
+    cursor: 'pointer',
   }
 
   const createButtonStyle: React.CSSProperties = {
@@ -437,6 +510,13 @@ function InterviewsComponent() {
               grid-template-columns: 1fr !important;
             }
           }
+          @media (max-width: 640px) {
+            .desktop-table { display: none !important; }
+            .mobile-cards { display: block !important; }
+          }
+          @media (min-width: 641px) {
+            .mobile-cards { display: none !important; }
+          }
         `}
       </style>
 
@@ -524,7 +604,7 @@ function InterviewsComponent() {
             )
           : (
               <>
-                <table style={tableStyle}>
+                <table className="desktop-table" style={tableStyle}>
                   <thead>
                     <tr>
                       <th style={thStyle}>Kandidat</th>
@@ -611,6 +691,88 @@ function InterviewsComponent() {
                     })}
                   </tbody>
                 </table>
+
+                {/* Mobile Cards View */}
+                <div className="mobile-cards">
+                  {data.interviews.map((interview: InterviewListItem) => {
+                    const modeStyle = getModeBadgeStyle(interview.mode)
+                    const modeLabel = interview.mode ? INTERVIEW_MODE_LABELS[interview.mode] : '-'
+                    const resultLabel = interview.result
+                      ? INTERVIEW_RESULT_LABELS[interview.result]
+                      : 'Belum ada hasil'
+                    const badgeBgColor = getResultBadgeColor(interview.result)
+                    const isCompleted = !!interview.result
+
+                    return (
+                      <div key={interview.id} style={mobileCardStyle}>
+                        <div style={mobileCardHeaderStyle}>
+                          <Link
+                            to={`/partners/${interview.candidate_id}` as never}
+                            style={{ color: '#2563eb', textDecoration: 'none', fontWeight: 600, fontSize: '1rem', flex: 1 }}
+                          >
+                            {interview.candidate_name}
+                          </Link>
+                          <span style={badgeStyle(modeStyle.backgroundColor, modeStyle.color)}>
+                            {modeLabel}
+                          </span>
+                        </div>
+                        
+                        {interview.candidate_email && (
+                          <div style={mobileCardSubtitleStyle}>{interview.candidate_email}</div>
+                        )}
+                        
+                        <div style={mobileCardRowStyle}>
+                          <span style={mobileCardLabelStyle}>Tanggal</span>
+                          <span style={mobileCardValueStyle}>{interview.interview_date}</span>
+                        </div>
+                        
+                        <div style={mobileCardRowStyle}>
+                          <span style={mobileCardLabelStyle}>Hasil</span>
+                          <button
+                            type="button"
+                            style={clickableBadgeStyle(badgeBgColor, '#ffffff')}
+                            onClick={() => {
+                              setSelectedResult(interview.result)
+                              setIsResultGuideOpen(true)
+                            }}
+                          >
+                            {resultLabel}
+                          </button>
+                        </div>
+                        
+                        <div style={mobileCardActionsStyle}>
+                          {isCompleted
+                            ? (
+                                <Link
+                                  to={`/interviews/${interview.id}` as never}
+                                  style={{
+                                    ...actionButtonBaseStyle,
+                                    backgroundColor: '#2563eb',
+                                    color: 'white',
+                                    border: '1px solid #2563eb',
+                                  }}
+                                >
+                                  Lihat Detail
+                                </Link>
+                              )
+                            : (
+                                <Link
+                                  to={`/interviews/${interview.id}/conduct` as never}
+                                  style={{
+                                    ...actionButtonBaseStyle,
+                                    backgroundColor: '#16a34a',
+                                    color: 'white',
+                                    border: '1px solid #16a34a',
+                                  }}
+                                >
+                                  Lakukan Wawancara
+                                </Link>
+                              )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
 
                 {data.totalPages > 1 && (
                   <div style={paginationStyle}>

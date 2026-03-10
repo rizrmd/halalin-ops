@@ -290,7 +290,8 @@ function AssessmentsComponent() {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: '36px',
+    minHeight: '44px', // Touch-friendly minimum
+    minWidth: '44px',  // Touch-friendly minimum
     padding: '0.5rem 0.875rem',
     borderRadius: '0.375rem',
     border: '1px solid #d1d5db',
@@ -299,6 +300,65 @@ function AssessmentsComponent() {
     fontSize: '0.875rem',
     fontWeight: 500,
     textDecoration: 'none',
+    cursor: 'pointer',
+  }
+
+  // Mobile card styles
+  const mobileCardStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.75rem',
+    padding: '1rem',
+    border: '1px solid #e5e7eb',
+    borderRadius: '0.5rem',
+    backgroundColor: 'white',
+    marginBottom: '0.75rem',
+  }
+
+  const mobileCardHeaderStyle: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: '0.5rem',
+  }
+
+  const mobileCardTitleStyle: React.CSSProperties = {
+    fontSize: '1rem',
+    fontWeight: 600,
+    color: '#111827',
+    flex: 1,
+  }
+
+  const mobileCardSubtitleStyle: React.CSSProperties = {
+    fontSize: '0.875rem',
+    color: '#6b7280',
+  }
+
+  const mobileCardRowStyle: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '0.5rem',
+  }
+
+  const mobileCardLabelStyle: React.CSSProperties = {
+    fontSize: '0.75rem',
+    color: '#6b7280',
+    textTransform: 'uppercase',
+  }
+
+  const mobileCardValueStyle: React.CSSProperties = {
+    fontSize: '0.875rem',
+    fontWeight: 500,
+    color: '#374151',
+  }
+
+  const mobileCardActionsStyle: React.CSSProperties = {
+    display: 'flex',
+    gap: '0.5rem',
+    marginTop: '0.5rem',
+    paddingTop: '0.75rem',
+    borderTop: '1px solid #e5e7eb',
   }
 
   const modalOverlayStyle: React.CSSProperties = {
@@ -416,6 +476,13 @@ function AssessmentsComponent() {
               grid-template-columns: 1fr !important;
             }
           }
+          @media (max-width: 640px) {
+            .desktop-table { display: none !important; }
+            .mobile-cards { display: block !important; }
+          }
+          @media (min-width: 641px) {
+            .mobile-cards { display: none !important; }
+          }
         `}
       </style>
 
@@ -501,7 +568,7 @@ function AssessmentsComponent() {
             )
           : (
               <>
-                <table style={tableStyle}>
+                <table className="desktop-table" style={tableStyle}>
                   <thead>
                     <tr>
                       <th style={thStyle}>Peserta</th>
@@ -593,6 +660,80 @@ function AssessmentsComponent() {
                     })}
                   </tbody>
                 </table>
+
+                {/* Mobile Cards View */}
+                <div className="mobile-cards">
+                  {data.assessments.map((assessment: AssessmentListItem) => {
+                    const statusStyle = getStatusBadgeStyle(assessment.status)
+                    const resultBadge = assessment.competency_result
+                      ? getResultBadgeColor(assessment.competency_result)
+                      : null
+                    const statusLabel = ASSESSMENT_STATUS_LABELS[assessment.status]
+                    const resultLabel = assessment.competency_result
+                      ? COMPETENCY_RESULT_LABELS[assessment.competency_result]
+                      : null
+
+                    return (
+                      <div key={assessment.id} style={mobileCardStyle}>
+                        <div style={mobileCardHeaderStyle}>
+                          <Link
+                            to={`/partners/${assessment.participant_id}` as never}
+                            style={{ ...participantLinkStyle, fontSize: '1rem', fontWeight: 600 }}
+                          >
+                            {assessment.participant_name}
+                          </Link>
+                          <button
+                            type="button"
+                            style={clickableBadgeStyle(statusStyle.backgroundColor, statusStyle.color)}
+                            onClick={() => setSelectedStatus(assessment.status)}
+                            aria-label={`Lihat arti status ${statusLabel}`}
+                          >
+                            {statusLabel}
+                          </button>
+                        </div>
+                        
+                        {assessment.participant_email && (
+                          <div style={mobileCardSubtitleStyle}>
+                            {assessment.participant_email}
+                          </div>
+                        )}
+                        
+                        <div style={mobileCardRowStyle}>
+                          <span style={mobileCardLabelStyle}>Template</span>
+                          <span style={mobileCardValueStyle}>{assessment.template_title}</span>
+                        </div>
+                        
+                        <div style={mobileCardRowStyle}>
+                          <span style={mobileCardLabelStyle}>Skor</span>
+                          <span style={{ ...mobileCardValueStyle, fontWeight: 600 }}>
+                            {assessment.total_score.toFixed(1)}
+                          </span>
+                        </div>
+                        
+                        {resultBadge && (
+                          <div style={{ marginTop: '0.25rem' }}>
+                            <span style={badgeStyle(resultBadge.backgroundColor, resultBadge.color)}>
+                              {resultLabel}
+                            </span>
+                          </div>
+                        )}
+                        
+                        <div style={mobileCardActionsStyle}>
+                          <Link
+                            to={(assessment.status === 'not_started' || assessment.status === 'in_progress'
+                              ? `/assessments/${assessment.id}/take`
+                              : `/assessments/${assessment.id}/results`) as never}
+                            style={actionButtonStyle}
+                          >
+                            {assessment.status === 'not_started' || assessment.status === 'in_progress'
+                              ? 'Lihat / Kerjakan'
+                              : 'Lihat Detail'}
+                          </Link>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
 
                 {data.totalPages > 1 && (
                   <div style={paginationStyle}>

@@ -230,9 +230,58 @@ function PartnersComponent() {
   }
 
   const mobileCardStyle: React.CSSProperties = {
-    display: 'block',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.75rem',
     padding: '1rem',
-    borderBottom: '1px solid #e5e7eb',
+    border: '1px solid #e5e7eb',
+    borderRadius: '0.5rem',
+    backgroundColor: 'white',
+    marginBottom: '0.75rem',
+  }
+
+  const mobileCardHeaderStyle: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: '0.5rem',
+  }
+
+  const mobileCardTitleStyle: React.CSSProperties = {
+    fontSize: '1rem',
+    fontWeight: 600,
+    color: '#111827',
+    flex: 1,
+  }
+
+  const mobileCardInfoStyle: React.CSSProperties = {
+    fontSize: '0.875rem',
+    color: '#6b7280',
+  }
+
+  const mobileCardActionsStyle: React.CSSProperties = {
+    display: 'flex',
+    gap: '0.5rem',
+    marginTop: '0.5rem',
+    paddingTop: '0.75rem',
+    borderTop: '1px solid #e5e7eb',
+  }
+
+  const viewButtonStyle: React.CSSProperties = {
+    padding: '0.5rem 0.875rem',
+    backgroundColor: '#2563eb',
+    color: 'white',
+    border: '1px solid #2563eb',
+    borderRadius: '0.375rem',
+    fontSize: '0.875rem',
+    fontWeight: 500,
+    textDecoration: 'none',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '44px',
+    minWidth: '44px',
+    cursor: 'pointer',
   }
 
   const partnerTypeBadgeStyle: React.CSSProperties = {
@@ -383,15 +432,39 @@ function PartnersComponent() {
                 <div style={emptyStyle}>Tidak ada data mitra yang sesuai.</div>
               )
             : (
-                data.partners.map((partner: PartnerListItem) => (
-                  <div key={partner.id} style={mobileCardStyle}>
-                    <div>
-                      <Link to={'/partners/$id' as never} params={{ id: partner.id } as never}>{partner.full_name}</Link>
-                    </div>
-                    <div>{formatPartnerType(partner.partner_type)}</div>
+              data.partners.map((partner: PartnerListItem) => (
+                <div key={partner.id} style={mobileCardStyle}>
+                  <div style={mobileCardHeaderStyle}>
+                    <Link
+                      to={'/partners/$id' as never}
+                      params={{ id: partner.id } as never}
+                      style={mobileCardTitleStyle}
+                    >
+                      {partner.full_name}
+                    </Link>
+                    <span style={partnerTypeBadgeStyle}>{formatPartnerType(partner.partner_type)}</span>
                   </div>
-                ))
-              )}
+                  
+                  {partner.email && (
+                    <div style={mobileCardInfoStyle}>{partner.email}</div>
+                  )}
+                  
+                  {partner.phone && (
+                    <div style={mobileCardInfoStyle}>{partner.phone}</div>
+                  )}
+                  
+                  <div style={mobileCardActionsStyle}>
+                    <Link
+                      to={'/partners/$id' as never}
+                      params={{ id: partner.id } as never}
+                      style={viewButtonStyle}
+                    >
+                      Lihat Detail
+                    </Link>
+                  </div>
+                </div>
+              ))
+            )}
         </div>
 
         {data.totalPages > 1 && (
