@@ -38,6 +38,38 @@ function getMimeType(filePath) {
   return mimeTypes[ext] || 'application/octet-stream'
 }
 
+// Helper to convert Node.js request to Fetch API Request
+async function nodeToFetchRequest(req, url) {
+  const headers = new Headers()
+  for (const [key, value] of Object.entries(req.headers)) {
+    if (value) {
+      if (Array.isArray(value)) {
+        value.forEach(v => headers.append(key, v))
+      } else {
+        headers.set(key, value)
+      }
+    }
+  }
+  
+  // Read body for POST requests
+  let body = null
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    const chunks = []
+    for await (const chunk of req) {
+      chunks.push(chunk)
+    }
+    if (chunks.length > 0) {
+      body = Buffer.concat(chunks)
+    }
+  }
+  
+  return new Request(url.toString(), {
+    method: req.method,
+    headers,
+    body,
+  })
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`)
   
@@ -98,6 +130,33 @@ const server = http.createServer(async (req, res) => {
       res.setHeader('Content-Type', getMimeType(filePath))
       res.setHeader('Cache-Control', 'public, max-age=31536000')
       res.end(fileContent)
+      return
+    } catch (err) {
+      console.error('Static file error:', err.message)
+      res.statusCode = 404
+      res.end('File not found')
+      return
+    }
+  }
+  
+  // All other routes go to TanStack Start handler
+  try {
+    const request = await nodeToFetchRequest(req, url)
+    const response = await serverEntry.fetch(request)
+    
+    res.statusCode = response.status
+    for (const [key, value] of response.headers.entries()) {
+      res.setHeader(key, value)
+    }
+
+    const body = await response.text()
+    res.end(body)
+  } catch (error) {
+    console.error('Server error:', error)
+    res.statusCode = 500
+    res.end('Internal Server Error')
+  }
+})
       return
     } catch (err) {
       console.error('Static file error:', err.message)
