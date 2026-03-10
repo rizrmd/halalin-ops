@@ -51,15 +51,17 @@ async function nodeToFetchRequest(req, url) {
     }
   }
   
-  // Read body for POST requests
-  let body = null
+  // Read body for POST/PUT/PATCH requests
+  let body = undefined
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     const chunks = []
     for await (const chunk of req) {
       chunks.push(chunk)
     }
     if (chunks.length > 0) {
-      body = Buffer.concat(chunks)
+      // Convert Buffer to Uint8Array for Fetch API compatibility
+      const buffer = Buffer.concat(chunks)
+      body = new Uint8Array(buffer)
     }
   }
   
