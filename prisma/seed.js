@@ -14,7 +14,7 @@ async function main() {
     create: {
       id: 'default-org',
       name: 'Default Organization',
-      code: 'DEFAULT',
+      org_type: 'internal',
     },
   })
   console.log('✓ Created organization:', org.name)
@@ -26,11 +26,10 @@ async function main() {
     update: {},
     create: {
       id: 'admin-user',
-      organization_id: org.id,
-      name: 'Admin User',
+      full_name: 'Admin User',
       email: 'admin@halalin.co.id',
       password_hash: hashedPassword,
-      role: 'admin',
+      partner_type: 'mitra',
       is_admin: true,
       is_active: true,
     },
@@ -44,14 +43,12 @@ async function main() {
     update: {},
     create: {
       id: 'partner-user',
-      organization_id: org.id,
-      name: 'Partner User',
+      full_name: 'Partner User',
       email: 'partner@halalin.co.id',
       password_hash: partnerPassword,
-      role: 'partner',
+      partner_type: 'mitra',
       is_admin: false,
       is_active: true,
-      partner_type: 'university',
     },
   })
   console.log('✓ Created partner user:', partner.email)
@@ -62,14 +59,13 @@ async function main() {
     update: {},
     create: {
       id: 'project-001',
-      organization_id: org.id,
       code: 'PROJ-001',
-      name: 'Sample Project',
+      title: 'Sample Project',
       status: 'active',
-      created_by: admin.id,
+      owner_org_id: org.id,
     },
   })
-  console.log('✓ Created project:', project.name)
+  console.log('✓ Created project:', project.title)
 
   // Create standards
   const standards = [
