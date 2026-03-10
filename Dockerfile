@@ -48,5 +48,5 @@ EXPOSE 3000
 # Set environment to production
 ENV NODE_ENV=production
 
-# Run database migrations and start the server
-CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm start"]
+# Start the server (migrations should be handled separately)
+CMD ["pnpm", "start"]
